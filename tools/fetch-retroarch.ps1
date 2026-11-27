@@ -26,6 +26,8 @@ $cores = [ordered]@{
     'genesis_plus_gx' = @{ License = 'https://raw.githubusercontent.com/libretro/Genesis-Plus-GX/master/LICENSE.txt'; Name = 'genesis-plus-gx' }
     'fceumm'          = @{ License = 'https://raw.githubusercontent.com/libretro/libretro-fceumm/master/Copying';     Name = 'fceumm' }
     'gambatte'        = @{ License = 'https://raw.githubusercontent.com/libretro/gambatte-libretro/master/COPYING';  Name = 'gambatte' }
+    # Máy thùng. Giấy phép phi thương mại, phải kèm nguyên văn; danh sách game: tools/update-fbneo-dat.ps1
+    'fbneo'           = @{ License = 'https://raw.githubusercontent.com/libretro/FBNeo/master/src/license.txt';       Name = 'fbneo' }
 }
 
 $sevenZip = Get-Command 7z -ErrorAction SilentlyContinue

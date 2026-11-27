@@ -485,7 +485,9 @@ public class ArchiveAndFormatTests
         var g = env.Scan().ToDictionary(x => Path.GetFileName(x.SourceFile));
         Assert.Contains("giải nén", g["ps1.zip"].Message);
         Assert.Equal(g["ps1.zip"].Message, g["ps1bin.zip"].Message);
-        Assert.Contains("arcade", g["kof98.zip"].Message);
+        // Đúng mã game FBNeo nhưng ROM khác phiên bản (ở đây là file giả): vẫn là game thùng, kèm cảnh báo (xem ArcadeTests)
+        Assert.Equal("Arcade", g["kof98.zip"].Platform);
+        Assert.Contains("FinalBurn Neo", g["kof98.zip"].Message);
         Assert.Contains("nested.zip", g["nested.zip"].Message);
         Assert.Equal("GBA", g["gba-as-bin.zip"].Platform);
         Assert.Equal("NES", g["mac.zip"].Platform);

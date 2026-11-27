@@ -9,7 +9,7 @@ using GameCenter.Core.Util;
 
 namespace GameCenter.Desktop;
 
-/// <summary>Trợ giúp: thoát game, đổi đĩa, tay cầm, PS2, BIOS, giấy phép, giới thiệu.</summary>
+/// <summary>Trợ giúp: thoát game, đổi đĩa, tay cầm, PS2, game thùng, BIOS, giấy phép, giới thiệu.</summary>
 public sealed class HelpWindow : Window
 {
     public HelpWindow()
@@ -29,6 +29,7 @@ public sealed class HelpWindow : Window
         Add(root, "help.pad_title", "help.pad_text");
         Add(root, "help.disc_title", "help.disc_text");
         Add(root, "help.ps2_title", "help.ps2_text");
+        Add(root, "help.arcade_title", "help.arcade_text");
 
         Add(root, "help.bios_title", "help.bios_text");
         root.Children.Add(Dialogs.Row(Dialogs.Button(Loc.T("settings.open_bios"), (_, _) => MainWindow.OpenFolder(App.Paths.BiosDir))));
@@ -76,4 +77,12 @@ public sealed class HelpWindow : Window
     /// <summary>Hướng dẫn đổi đĩa ngắn, hiện khi chạy game nhiều đĩa (mục 8.3).</summary>
     public static Task ShowDiscGuide(Window owner) =>
         Dialogs.Info(owner, Loc.T("help.disc_dialog_title"), Loc.T("help.disc_text"));
+
+    /// <summary>Cách bỏ xu và bắt đầu game thùng (kèm phím bàn phím đang gán), hiện lần đầu chơi mỗi game thùng.</summary>
+    public static Task ShowArcadeGuide(Window owner)
+    {
+        var keys = KeyboardLayout.Resolve(App.Settings.KeyBindings);
+        return Dialogs.Info(owner, Loc.T("help.arcade_dialog_title"),
+            Loc.T("help.arcade_coin", KeyboardLayout.DisplayName(keys["select"]), KeyboardLayout.DisplayName(keys["start"])));
+    }
 }

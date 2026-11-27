@@ -29,6 +29,10 @@ public sealed class PlatformDefinition
     public bool Disc { get; set; }
     public bool Enabled { get; set; } = true;
     public BiosInfo? Bios { get; set; }
+
+    /// <summary>Tên hiện trên giao diện: bản dịch "platform.name.&lt;Name&gt;" nếu có (ví dụ "Máy thùng"), không thì <see cref="DisplayName"/>.</summary>
+    [JsonIgnore]
+    public string Label => Loc.Current.Has("platform.name." + Name) ? Loc.T("platform.name." + Name) : DisplayName;
 }
 
 public sealed class PlatformCatalog

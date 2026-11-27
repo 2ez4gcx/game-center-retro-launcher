@@ -6,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using GameCenter.Core.Arcade;
 using GameCenter.Core.Config;
 using GameCenter.Core.Data;
 using GameCenter.Core.Emulation;
@@ -171,7 +172,7 @@ public partial class MainWindow : Window
         int Count(Func<GameItem, bool> f) => _all.Count(f);
         var tabs = new List<(string Key, string Icon, string Label, int Count)> { (TabAll, "◆", Loc.T("tab.all"), _all.Count) };
         foreach (var p in App.Catalog.Platforms.Where(p => p.Enabled && _all.Any(g => g.Record.Platform == p.Name)))
-            tabs.Add((p.Name, "▸", p.DisplayName, Count(g => g.Record.Platform == p.Name)));
+            tabs.Add((p.Name, "▸", p.Label, Count(g => g.Record.Platform == p.Name)));
         tabs.Add((TabFav, "★", Loc.T("tab.favorites"), Count(g => g.Record.IsFavorite)));
         tabs.Add((TabRecent, "◷", Loc.T("tab.recent"), Count(g => g.Record.LastPlayedAt != null)));
         if (_all.Any(g => g.IsUnknown))
@@ -207,7 +208,7 @@ public partial class MainWindow : Window
         TabFav => Loc.T("tab.favorites"),
         TabRecent => Loc.T("tab.recent"),
         GameDatabase.UnknownPlatform => Loc.T("tab.unknown"),
-        _ => App.Catalog.Get(_tab)?.DisplayName ?? _tab,
+        _ => App.Catalog.Get(_tab)?.Label ?? _tab,
     };
 
     private void ApplyFilter(long? selectId)
@@ -277,7 +278,7 @@ public partial class MainWindow : Window
         if (!silent) IsEnabled = false;
         try
         {
-            var scanner = new GameScanner(App.Catalog, App.Paths.GamesDir, App.Paths.PlaylistsDir);
+            var scanner = new GameScanner(App.Catalog, App.Paths.GamesDir, App.Paths.PlaylistsDir, App.Paths.BiosDir);
             var summary = await Task.Run(() => App.Db.ApplyScan(scanner.Scan()));
             Log.Info($"Quét xong: {summary}");
             ImportBios(scanner.BiosFiles);
@@ -340,12 +341,24 @@ public partial class MainWindow : Window
                 if (await Dialogs.Confirm(this, Loc.T("play.bios_missing_title"), plan.Message, yes: Loc.T("play.open_bios"), no: Loc.T("dialog.close")))
                     OpenFolder(App.Paths.BiosDir);
             }
+            else if (plan.Problem == LaunchProblem.ArcadeParentMissing)
+            {
+                // Bộ gốc phải nằm cùng thư mục với game
+                if (await Dialogs.Confirm(this, Loc.T("play.error_title"), plan.Message, yes: Loc.T("more.open_folder"), no: Loc.T("dialog.close")))
+                    OpenFolder(item.Record.FolderPath);
+            }
             else await Dialogs.Info(this, Loc.T("play.error_title"), plan.Message);
             return;
         }
+        if (plan.Warning != null
+            && !await Dialogs.Confirm(this, item.Name, plan.Warning, yes: Loc.T("play.anyway"), no: Loc.T("dialog.cancel")))
+            return;
 
         if (item.Record.DiscCount >= 2 && App.Settings.ShowDiscChangeGuide && !App.Settings.UseUserDuckStation)
             await HelpWindow.ShowDiscGuide(this);
+        // Game thùng: lần đầu chơi mỗi game nhắc bỏ xu (máy thùng phải bỏ xu rồi mới bấm START)
+        if (item.Record.Platform == ArcadeDatabase.Platform && item.Record.PlayCount == 0)
+            await HelpWindow.ShowArcadeGuide(this);
 
         // RetroArch ghi lại toàn bộ cấu hình khi thoát (kể cả giá trị từ --appendconfig của lần trước),
         // nên ghi lại cấu hình chuẩn trước mỗi lần chạy.
@@ -528,7 +541,7 @@ public partial class MainWindow : Window
     {
         var platforms = App.Catalog.Platforms.Where(p => p.Enabled).ToList();
         int i = await Dialogs.Choose(this, Loc.T("platform.title"), Loc.T("platform.text", item.Name),
-            platforms.Select(p => p.DisplayName).ToList());
+            platforms.Select(p => p.Label).ToList());
         if (i < 0) return;
         App.Db.SetPlatform(item.Record.Id, platforms[i].Name);
         Reload(item.Record.Id);

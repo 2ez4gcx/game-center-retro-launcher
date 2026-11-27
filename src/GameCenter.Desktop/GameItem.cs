@@ -20,13 +20,14 @@ public sealed class GameItem : INotifyPropertyChanged
     public string Name => Record.Name;
 
     public string PlatformName =>
-        IsUnknown ? Loc.T("tab.unknown") : App.Catalog.Get(Record.Platform)?.DisplayName ?? Record.Platform;
+        IsUnknown ? Loc.T("tab.unknown") : App.Catalog.Get(Record.Platform)?.Label ?? Record.Platform;
 
     public string PlatformShort => Record.Platform switch
     {
         "MegaDrive" => "MD",
         "MasterSystem" => "SMS",
         "GameGear" => "GG",
+        "Arcade" => "ARC",
         GameDatabase.UnknownPlatform => "?",
         _ => Record.Platform,
     };
@@ -44,6 +45,7 @@ public sealed class GameItem : INotifyPropertyChanged
         "MegaDrive" => Color.FromRgb(0x40, 0xC4, 0xFF),
         "PS1" => Color.FromRgb(0xFF, 0xD7, 0x40),
         "PS2" => Color.FromRgb(0x44, 0x8A, 0xFF),
+        "Arcade" => Color.FromRgb(0xFF, 0x40, 0x81),
         _ => Color.FromRgb(0xFF, 0x98, 0x00),
     };
 
