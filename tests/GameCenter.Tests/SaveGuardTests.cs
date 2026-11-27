@@ -392,9 +392,21 @@ public class SaveGuardTests
         Assert.Equal("10", keys["autosave_interval"]);
         Assert.Equal("true", keys["sort_savefiles_enable"]);
         Assert.Equal("false", keys["content_runtime_log"]);          // không ghi vào thư mục cài đặt
+        Assert.StartsWith(env.Paths.ConfigDir, keys["cheat_database_path"]);   // thư mục cheats/<core> cũng vậy
         var core = RetroArchConfig.ManagedCoreOptions(new AppSettings(), false);
         Assert.Equal("libretro", core["beetle_psx_hw_use_mednafen_memcard0_method"]);
         Assert.Equal("enabled", core["pcsx2_shared_memory_cards"]);
+    }
+
+    /// <summary>Ổ chứa save sắp đầy: cảnh báo trước khi chơi (kèm dung lượng còn trống và tên ổ).</summary>
+    [Fact]
+    public void LowDisk_WarnsBeforePlaying()
+    {
+        using var env = new TestEnv();
+        Assert.Null(EmulatorLauncher.LowDiskWarning(env.Paths.SavesDir, threshold: 0));
+        var warning = EmulatorLauncher.LowDiskWarning(env.Paths.SavesDir, threshold: long.MaxValue);
+        Assert.NotNull(warning);
+        Assert.Contains("MB", warning);
     }
 
     [Fact]

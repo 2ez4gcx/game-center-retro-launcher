@@ -60,6 +60,9 @@ public static class RetroArchConfig
             ["core_options_path"] = paths.CoreOptionsCfg,
             ["global_core_options"] = "true",
             ["log_dir"] = paths.LogsDir,
+            // Mặc định RetroArch (Windows) tạo thư mục rỗng cheats/<core> cạnh retroarch.exe mỗi lần mở core, tức trong
+            // thư mục cài đặt (gỡ cài đặt còn sót lại). Đưa sang thư mục dữ liệu.
+            ["cheat_database_path"] = Path.Combine(paths.ConfigDir, "cheats"),
 
             // Màn hình
             ["video_fullscreen"] = settings.Fullscreen ? "true" : "false",

@@ -55,7 +55,7 @@ Chỉ nhận lại save cho game **đã từng chơi** (số lần chơi > 0 ho�
 | C5 | Lỡ đổi cách lưu thẻ nhớ trong menu RetroArch (Beetle "Mednafen" → save thành `.mcr` chỗ khác; LRPS2 thẻ nhớ riêng từng game) | Game Center ghi lại tùy chọn core mỗi lần chạy: `beetle_psx_hw_use_mednafen_memcard0_method = libretro`, `pcsx2_shared_memory_cards = enabled` | 🆕 🧪 |
 | C6 | Gỡ cài đặt / nâng cấp | Bộ cài không bao giờ xóa `Saves`, `States`, `BIOS`, `Backups` | ✅ · checklist |
 | C7 | Dùng DuckStation tự cài cho PS1 | Save nằm trong thư mục của DuckStation, không dùng chung với Beetle | ✅ ghi rõ trong Cài đặt |
-| C8 | Ổ đầy / file bị khóa (đồng bộ đám mây, phần mềm diệt virus) | 💡 kiểm tra dung lượng trống trước khi chơi, báo nếu RetroArch không ghi được save (đọc log) | 💡 |
+| C8 | Ổ đầy / file bị khóa (đồng bộ đám mây, phần mềm diệt virus) | Ổ chứa save còn dưới 300 MB → cảnh báo trước khi chơi, hỏi "Vẫn chơi". 💡 báo nếu RetroArch không ghi được save (log RetroArch theo ngôn ngữ giao diện nên khó đọc chắc chắn) | 🆕 🧪 / 💡 |
 | C9 | Sao lưu thủ công | "Cài đặt → Sao lưu dữ liệu" nén Saves, States và thẻ nhớ PS2 | ✅ / 🆕 thêm thẻ nhớ PS2 |
 | C10 | Hai lần sao lưu trong cùng một phần nghìn giây (máy nhanh; "Khôi phục" sao lưu bản hiện tại ngay trước khi chép) | Lỗi cũ: thư mục sao lưu đặt tên theo thời điểm nên bản sau đè bản trước, có thể khôi phục nhầm bản (CI macOS phát hiện). Nay bản mới luôn đặt sau bản mới nhất, không bao giờ ghi đè | ✅ 🧪 |
 
@@ -129,7 +129,5 @@ Làm trên **máy Windows sạch** và **máy đang dùng bản 0.2.0 có save t
 ## 5. Đề xuất tiếp theo
 
 - 💡 Nút "Ghép đĩa" chọn tay (M6).
-- 💡 RetroArch tạo thư mục rỗng `cheats/<core>` cạnh `retroarch.exe` khi chạy core (vô hại, không liên quan save); có thể chuyển `cheat_database_path` sang thư mục dữ liệu.
 - 💡 Đọc log RetroArch sau mỗi lần chơi: nếu có lỗi ghi save (`[SRAM]` thất bại) thì báo ngay và giữ bản sao lưu.
-- 💡 Kiểm tra dung lượng ổ trước khi chơi.
-- 💡 Chạy `tools/e2e-test.ps1` trên GitHub Actions Windows (tải RetroArch + core như khi đóng gói) để kiểm thử đầu-cuối tự động mỗi lần đẩy tag.
+- ✅ Đã làm: job `installer-test` trên GitHub Actions (chạy tay hoặc khi đẩy tag) cài bộ cài thật trên máy Windows sạch, gỡ / cài lại giữ dữ liệu, rồi chạy `tools/e2e-test.ps1` với RetroArch trong bộ cài. RetroArch không còn tạo `cheats/<core>` trong thư mục cài (`cheat_database_path` → `Config/cheats`).
