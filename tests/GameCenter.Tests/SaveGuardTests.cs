@@ -63,6 +63,65 @@ public class SaveGuardTests
         Assert.Equal("the le 1", ReadSrm(env, "Game"));
     }
 
+    /// <summary>
+    /// Dữ liệu thật khi nâng cấp: bản 0.1.0 đặt tên .cue tự sinh theo tên game ("Yu-Gi-Oh! Forbidden Memories.cue"), bản sau
+    /// theo tên file ("... (USA).cue"). Người chơi chơi lần gần nhất bằng bản 0.1.0 → save mới nhất mang tên game, còn tên
+    /// hiện tại chỉ có save cũ hơn. Lần chơi đầu sau nâng cấp phải dùng save mới nhất (bản cũ hơn được sao lưu);
+    /// các lần sau không bao giờ thay save đang dùng nữa.
+    /// </summary>
+    [Fact]
+    public void Upgrade_NewerSaveUnderOldTitleName_IsUsedOnFirstLaunchOnly()
+    {
+        using var env = new TestEnv();
+        var db = Db(env);
+        env.File("PS1/Yu-Gi-Oh! Forbidden Memories (USA).bin", TestEnv.Ps1Disc());
+        db.ApplyScan(env.Scan());
+        var g = db.GetGames().Single();
+        Assert.Equal("Yu-Gi-Oh! Forbidden Memories", g.Title);
+        Assert.EndsWith("Yu-Gi-Oh! Forbidden Memories (USA).cue", g.LaunchFile);
+        db.MarkPlayed(g.Id);
+        g = db.GetGames().Single();
+
+        var current = Srm(env, "Yu-Gi-Oh! Forbidden Memories (USA)", "save 9h17");
+        File.SetLastWriteTimeUtc(current, DateTime.UtcNow.AddHours(-4));
+        var byTitle = Srm(env, "Yu-Gi-Oh! Forbidden Memories", "save 12h44");
+        File.SetLastWriteTimeUtc(byTitle, DateTime.UtcNow.AddHours(-1));
+
+        var loc = Prepare(env, db, g);
+        Assert.Equal("save 12h44", ReadSrm(env, "Yu-Gi-Oh! Forbidden Memories (USA)"));
+        Assert.Equal("save 12h44", File.ReadAllText(byTitle));                 // bản tên cũ giữ nguyên
+        var guard = new SaveGuard(env.Paths);
+        Assert.Contains(guard.ListBackups(loc), b => b.Files.Any(f => File.ReadAllText(Path.Combine(b.Dir, f)) == "save 9h17"));
+
+        // Đã chơi bằng bản mới (có lịch sử tên save): save tên cũ có mới hơn cũng không thay save đang dùng
+        File.WriteAllText(byTitle, "ghi boi chuong trinh khac");
+        File.SetLastWriteTimeUtc(byTitle, DateTime.UtcNow.AddHours(1));
+        Prepare(env, db, g);
+        Assert.Equal("save 12h44", ReadSrm(env, "Yu-Gi-Oh! Forbidden Memories (USA)"));
+    }
+
+    /// <summary>Tên cũ trùng tên save hiện tại của một game khác: đó là save của game kia, không lấy.</summary>
+    [Fact]
+    public void Upgrade_OldNameUsedByAnotherGame_IsNotTaken()
+    {
+        using var env = new TestEnv();
+        var db = Db(env);
+        env.File("PS1/Tekken (USA).bin", TestEnv.Ps1Disc());
+        Disc(env, "PS1/Ban khac", "Tekken");                                    // game khác, file chạy "Tekken.cue"
+        db.ApplyScan(env.Scan());
+        foreach (var game in db.GetGames()) db.MarkPlayed(game.Id);
+        var g = db.GetGames().Single(x => x.LaunchFile.EndsWith("Tekken (USA).cue"));
+        Assert.Equal("Tekken", g.Title);
+
+        var current = Srm(env, "Tekken (USA)", "save cua ban USA");
+        File.SetLastWriteTimeUtc(current, DateTime.UtcNow.AddHours(-2));
+        Srm(env, "Tekken", "save cua ban khac");
+
+        Prepare(env, db, g);
+        Assert.Equal("save cua ban USA", ReadSrm(env, "Tekken (USA)"));
+        Assert.Equal("save cua ban khac", ReadSrm(env, "Tekken"));
+    }
+
     /// <summary>Chơi đĩa 1 (bản 0.2.0, save "Game (Disc 1).srm"), sau đó chép thêm đĩa 2 → game thành bộ nhiều đĩa.</summary>
     [Fact]
     public void SingleDiscBecomesMultiDisc_SaveFollows()
