@@ -227,7 +227,7 @@
   "pad.start": "START",
   "pad.start.hint": "start / pause",
   "pad.select": "SELECT",
-  "pad.select.hint": "select",
+  "pad.select.hint": "select · insert coin (arcade)",
 
   "key.shift": "Left Shift",
   "key.rshift": "Right Shift",

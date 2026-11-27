@@ -13,7 +13,7 @@
 Cài đặt → Next → Finish → Chép game → Chơi
 ```
 
-![Màn hình chính Game Center: danh sách game NES, SNES, Game Boy, PS1 với chữ lớn và nút Chơi](docs/anh/man-hinh-chinh.png)
+![Màn hình chính Game Center: danh sách game máy thùng, SNES, NES, PS1, PS2 với chữ lớn và nút Chơi](docs/anh/man-hinh-chinh.png)
 
 ## Tính năng chính
 
@@ -225,7 +225,7 @@ Phát hành:
 & "C:\Program Files\Inno Setup 7\ISCC.exe" installer\GameCenter.iss
 ```
 
-Trước khi phát hành: chạy `e2e-test.ps1` và làm hết checklist thủ công trong [docs/bao-toan-save.md](docs/bao-toan-save.md#43-thủ-công--checklist-bắt-buộc-trước-khi-phát-hành).
+Trước khi phát hành: viết ghi chú phát hành `docs/phat-hanh/v<phiên bản>.md` (job tạo Release lấy nội dung từ đây), chạy thử đóng gói (**Actions → build → Run workflow**: đóng gói 3 hệ, thử bộ cài trên máy Windows sạch), chạy `e2e-test.ps1` và làm hết checklist thủ công trong [docs/bao-toan-save.md](docs/bao-toan-save.md#43-thủ-công--checklist-bắt-buộc-trước-khi-phát-hành).
 
 Linux / macOS (chạy trên chính hệ đó, hoặc để GitHub Actions build khi push tag):
 

@@ -225,7 +225,7 @@
   "pad.start": "START",
   "pad.start.hint": "bắt đầu / tạm dừng",
   "pad.select": "SELECT",
-  "pad.select.hint": "chọn",
+  "pad.select.hint": "chọn · bỏ xu (máy thùng)",
 
   "key.shift": "Shift trái",
   "key.rshift": "Shift phải",

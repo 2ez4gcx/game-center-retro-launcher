@@ -114,10 +114,17 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with: { path: dist, merge-multiple: true }
       # Bản nháp: kiểm tra rồi mới bấm Publish trên GitHub
       - uses: softprops/action-gh-release@v2
         with:
           draft: true
-          files: dist/*
+          # Chỉ bộ cài; không đính log của job installer-test
+          files: |
+            dist/*.exe
+            dist/*.AppImage
+            dist/*.dmg
+          # Ghi chú phát hành viết sẵn trong repo (tiếng Việt + tiếng Anh), mỗi tag một file
+          body_path: docs/phat-hanh/${{ github.ref_name }}.md
