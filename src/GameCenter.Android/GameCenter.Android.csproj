@@ -30,6 +30,11 @@
     <PackageReference Include="Avalonia" Version="11.3.22" />
     <PackageReference Include="Avalonia.Android" Version="11.3.22" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <!-- Bản mới hơn bản Avalonia / Microsoft.Data.Sqlite kéo theo: thư viện native căn theo trang nhớ 16 KB
+         (máy Android đời mới dùng trang 16 KB không nạp được thư viện căn 4 KB) -->
+    <PackageReference Include="SkiaSharp" Version="3.119.4" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Android" Version="3.119.4" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.14" />
   </ItemGroup>
 
   <!-- Button, Orientation... của Android trùng tên với Avalonia -->

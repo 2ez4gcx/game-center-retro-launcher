@@ -14,8 +14,11 @@ import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.FrameLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -53,6 +56,7 @@ class GameActivity : ComponentActivity() {
         const val EXTRA_ENV = "env"                   // biến môi trường cho core, mỗi phần tử "TÊN=giá trị"
         const val EXTRA_ANALOG = "analog"             // true: hiện cần analog ảo (PS2, PSP)
         const val EXTRA_TEXT_EXIT_AGAIN = "textExitAgain"
+        const val EXTRA_TEXT_LOADING = "textLoading"
         const val EXTRA_TITLE = "title"                       // tên game, làm tiêu đề menu
         const val EXTRA_TEXT_MENU_CONTINUE = "textMenuContinue"
         const val EXTRA_TEXT_MENU_DISC = "textMenuDisc"
@@ -69,6 +73,7 @@ class GameActivity : ComponentActivity() {
 
     private lateinit var retroView: GLRetroView
     private lateinit var touchPad: TouchPadView
+    private var loading: TextView? = null
     private val handler = Handler(Looper.getMainLooper())
 
     private var sramFile: File? = null
@@ -152,10 +157,17 @@ class GameActivity : ComponentActivity() {
         // Đã cắm tay cầm thì không cần nút cảm ứng
         touchPad.visibility = if (hasGamepad()) View.GONE else View.VISIBLE
 
+        loading = TextView(this).apply {
+            text = intent.getStringExtra(EXTRA_TEXT_LOADING) ?: "Đang mở game…"
+            textSize = 24f
+            setTextColor(0xFFFFFFFF.toInt())
+        }
         setContentView(FrameLayout(this).apply {
             setBackgroundColor(0xFF000000.toInt())
             addView(retroView, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
             addView(touchPad, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+            // Game nặng (PS1, PS2, PSP) mất vài giây mới có hình: báo đang mở để người chơi không tưởng máy treo
+            loading?.let { addView(it, FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, Gravity.CENTER)) }
         })
         retroView.requestFocus()
         hideSystemBars()
@@ -181,6 +193,8 @@ class GameActivity : ComponentActivity() {
     /** Khung hình đầu tiên đã vẽ: core và game đã sẵn sàng, giờ mới nạp được chỗ đang chơi. */
     private fun onGameStarted() {
         gameStarted = true
+        loading?.let { (it.parent as? ViewGroup)?.removeView(it) }
+        loading = null
         if (pendingLoadState) {
             pendingLoadState = false
             try {

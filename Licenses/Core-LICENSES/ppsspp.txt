@@ -1,0 +1,9 @@
+PPSSPP (core libretro giả lập PSP, dùng trong bản Android của Game Center)
+Tác giả: Henrik Rydgård và những người đóng góp
+Mã nguồn: https://github.com/hrydgard/ppsspp
+Giấy phép: GNU General Public License phiên bản 2 (GPL-2.0) hoặc mới hơn
+
+Game Center cho Android đóng kèm bản build của libretro (https://buildbot.libretro.com/) và gói tài nguyên hệ thống
+của PPSSPP (phông chữ, dữ liệu flash0 do dự án PPSSPP phát hành), không sửa đổi. Giấy phép của gói tài nguyên nằm
+trong file LICENSE.TXT của chính gói đó (được chép vào thư mục BIOS/PPSSPP trên máy).
+Nguyên văn giấy phép GPL-2.0: xem file fceumm.txt trong cùng thư mục (cùng nội dung).

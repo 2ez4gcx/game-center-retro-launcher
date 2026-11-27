@@ -71,6 +71,7 @@ public sealed class GamePlayer
         intent.PutExtra("env", CoreEnvironment(plan.CorePath!, paths.SavesDir));
         intent.PutExtra("analog", App.Catalog.Get(game.Platform)?.Analog == true);
         intent.PutExtra("textExitAgain", Loc.T("android.exit_again"));
+        intent.PutExtra("textLoading", Loc.T("android.loading"));
         intent.PutExtra("title", game.Name);
         intent.PutExtra("textMenuContinue", Loc.T("android.menu_continue"));
         intent.PutExtra("textMenuDisc", Loc.T("android.menu_disc"));

@@ -55,16 +55,23 @@ public partial class App : Avalonia.Application
         if (Current?.ApplicationLifetime is ISingleViewApplicationLifetime single) single.MainView = new MainView();
     }
 
+    /// <summary>Nạp lại toàn bộ (đường dẫn, cài đặt, database) rồi dựng lại màn hình chính: dùng sau khi đổi thư mục dữ liệu.</summary>
+    public static void Restart()
+    {
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+        Start(global::Android.App.Application.Context);
+        if (Current?.ApplicationLifetime is ISingleViewApplicationLifetime single) single.MainView = new MainView();
+    }
+
     /// <summary>
     /// Thư mục ứng dụng (chỉ đọc trên máy tính) ở đây là thư mục riêng của app: Defaults/ và Licenses/ được chép ra
     /// từ APK mỗi lần khởi động. Core libretro nằm trong thư mục thư viện native của app.
-    /// Thư mục dữ liệu (Games, Saves, BIOS...): bộ nhớ chung, phần riêng của app
-    /// (Android/data/com.khuongdoan.gamecenter/files), chép game vào được bằng cáp USB, không cần xin quyền.
+    /// Thư mục dữ liệu (Games, Saves, BIOS...): xem <see cref="Storage"/>.
     /// </summary>
     private static void Start(global::Android.Content.Context context)
     {
         var appDir = context.FilesDir!.AbsolutePath;
-        var dataDir = (context.GetExternalFilesDir(null) ?? context.FilesDir)!.AbsolutePath;
+        var dataDir = Storage.ResolveDataDir(context);
         CopyAssets(context, "Defaults", Path.Combine(appDir, "Defaults"));
         CopyAssets(context, "Licenses", Path.Combine(appDir, "Licenses"));
 

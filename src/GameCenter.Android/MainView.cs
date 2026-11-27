@@ -45,6 +45,12 @@ public sealed class MainView : UserControl
         FontSize = 20, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(28), IsVisible = false,
         HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
     };
+    private readonly Button _storageButton = new()
+    {
+        FontSize = 20, Padding = new Thickness(20, 14), Margin = new Thickness(28, 0, 28, 28), IsVisible = false,
+        HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom,
+    };
+    private bool _awaitingStorage;
     private readonly Grid _overlay = new() { IsVisible = false, Background = new SolidColorBrush(Color.Parse("#C0000000")) };
     private Action? _cancelDialog;
 
@@ -60,36 +66,30 @@ public sealed class MainView : UserControl
     {
         Background = Background0;
 
+        // Nút có chữ, không dùng biểu tượng trần (bánh răng, dấu hỏi): người lớn tuổi đọc chữ dễ hơn đoán hình
         var scan = HeaderButton(Plain(Loc.T("main.scan")));
         scan.Click += (_, _) => _ = RescanAsync();
-        var settings = HeaderButton("⚙");
+        var settings = HeaderButton(Loc.T("settings.title"));
         settings.Click += (_, _) => _ = ShowSettings();
-        var help = HeaderButton("?");
+        var help = HeaderButton(Loc.T("help.title"));
         help.Click += (_, _) => _ = ShowHelp();
 
         _search.Watermark = Plain(Loc.T("main.search"));
         _search.FontSize = 20;
         _search.Padding = new Thickness(14, 10);
         _search.VerticalAlignment = VerticalAlignment.Center;
-        _search.Margin = new Thickness(0, 10, 0, 0);
         _search.TextChanged += (_, _) => ShowGames();
 
-        // Hai hàng: tên app và các nút ở trên, ô tìm kiếm rộng hết chiều ngang ở dưới. Xếp chung một hàng thì màn hình
-        // điện thoại (rộng khoảng 360 dp) không đủ chỗ: ô tìm kiếm bị ép sát và các nút chồng lên nhau, không bấm được.
-        var header = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto"), RowDefinitions = new RowDefinitions("Auto,Auto"),
-            Margin = new Thickness(16, 12, 16, 4),
-        };
-        header.Children.Add(new TextBlock
-        {
-            Text = "Game Center", FontSize = 28, FontWeight = FontWeight.Bold, VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-        });
-        Grid.SetColumn(scan, 1); header.Children.Add(scan);
-        Grid.SetColumn(settings, 2); header.Children.Add(settings);
-        Grid.SetColumn(help, 3); header.Children.Add(help);
-        Grid.SetRow(_search, 1); Grid.SetColumnSpan(_search, 4); header.Children.Add(_search);
+        // Ba hàng: tên app, ba nút chia đều chiều ngang, ô tìm kiếm. Xếp chung một hàng thì màn hình điện thoại
+        // (rộng khoảng 360 dp) không đủ chỗ: ô tìm kiếm bị ép sát và các nút chồng lên nhau, không bấm được.
+        var header = new StackPanel { Margin = new Thickness(16, 12, 16, 4), Spacing = 10 };
+        header.Children.Add(new TextBlock { Text = "Game Center", FontSize = 28, FontWeight = FontWeight.Bold });
+        var actions = new UniformGrid { Columns = 3, Margin = new Thickness(-4, 0) };
+        actions.Children.Add(scan);
+        actions.Children.Add(settings);
+        actions.Children.Add(help);
+        header.Children.Add(actions);
+        header.Children.Add(_search);
 
         _tabs.Background = Brushes.Transparent;
         _tabs.Margin = new Thickness(8, 0);
@@ -122,11 +122,22 @@ public sealed class MainView : UserControl
         Grid.SetRow(_tabs, 1); root.Children.Add(_tabs);
         Grid.SetRow(_games, 2); root.Children.Add(_games);
         Grid.SetRow(_empty, 2); root.Children.Add(_empty);
+        _storageButton.Content = new TextBlock { Text = Loc.T("android.storage_button"), FontSize = 20, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center };
+        _storageButton.Click += (_, _) => _ = OfferSharedFolder();
+        Grid.SetRow(_storageButton, 2); root.Children.Add(_storageButton);
         Grid.SetRow(_status, 3); root.Children.Add(_status);
         Grid.SetRowSpan(_overlay, 4); root.Children.Add(_overlay);
         Content = root;
+        // Hộp thoại đang mở thì khóa phần phía sau: nếu không, phím Tab / phím hướng của tay cầm đưa tiêu điểm lọt ra
+        // các nút và ô tìm kiếm bên dưới lớp phủ (bàn phím ảo bật lên, bấm nhầm nút không nhìn thấy)
+        _overlay.PropertyChanged += (_, e) =>
+        {
+            if (e.Property != IsVisibleProperty) return;
+            foreach (var child in root.Children)
+                if (!ReferenceEquals(child, _overlay)) child.IsEnabled = !_overlay.IsVisible;
+        };
 
-        _onResumed = () => Dispatcher.UIThread.Post(() => _ = RescanAsync());
+        _onResumed = () => Dispatcher.UIThread.Post(() => _ = _awaitingStorage ? StorageAccessAnswered() : RescanAsync());
         AttachedToVisualTree += (_, _) =>
         {
             if (MainActivity.Instance is { } activity)
@@ -164,8 +175,9 @@ public sealed class MainView : UserControl
 
     private static Button HeaderButton(string text) => new()
     {
-        Content = text, FontSize = 20, Padding = new Thickness(18, 12), Margin = new Thickness(6, 0, 0, 0),
-        VerticalAlignment = VerticalAlignment.Center,
+        Content = new TextBlock { Text = text, FontSize = 20, TextTrimming = TextTrimming.CharacterEllipsis },
+        Padding = new Thickness(8, 14), Margin = new Thickness(4, 0),
+        HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center,
     };
 
     /// <summary>
@@ -309,10 +321,11 @@ public sealed class MainView : UserControl
 
         _games.IsVisible = shown.Count > 0;
         _empty.IsVisible = shown.Count == 0;
+        _storageButton.IsVisible = _all.Count == 0 && !UsingSharedFolder;
         if (shown.Count == 0)
         {
             _empty.Text = _all.Count == 0
-                ? Loc.T("main.empty_title") + "\n\n" + Loc.T("android.empty_text", App.Paths.GamesDir)
+                ? Loc.T("main.empty_title") + "\n\n" + Loc.T("android.empty_text", Friendly(App.Paths.GamesDir))
                 : Loc.T("main.empty_here_title") + "\n\n" + (search.Length > 0 ? Loc.T("main.empty_search", search) : Loc.T("main.empty_tab"));
         }
         _status.Text = _scanning ? Loc.T("main.scanning")
@@ -519,13 +532,13 @@ public sealed class MainView : UserControl
             body.Children.Add(SectionLabel(title));
             body.Children.Add(new TextBlock { Text = text, FontSize = 19, TextWrapping = TextWrapping.Wrap });
         }
-        Add(Loc.T("help.play_title"), Loc.T("android.help_play", App.Paths.GamesDir));
+        Add(Loc.T("help.play_title"), Loc.T("android.help_play", Friendly(App.Paths.GamesDir)));
         Add(Loc.T("help.exit_title"), Loc.T("android.help_exit"));
         Add(Loc.T("help.pad_title"), Loc.T("android.help_pad"));
         Add(Loc.T("help.disc_title"), Loc.T("android.help_disc"));
         Add(Loc.T("help.arcade_title"), Loc.T("android.help_arcade") + "\n\n" + Loc.T("android.arcade_coin"));
-        Add(Loc.T("help.bios_title"), Loc.T("android.help_bios", App.Paths.BiosDir));
-        Add(Loc.T("help.errors_title"), Loc.T("android.help_errors", App.Paths.LogFile));
+        Add(Loc.T("help.bios_title"), Loc.T("android.help_bios", Friendly(App.Paths.BiosDir)));
+        Add(Loc.T("help.errors_title"), Loc.T("android.help_errors", Friendly(App.Paths.LogFile)));
         Add(Loc.T("help.about_title"), Loc.T("help.about_text", AppVersion(), Author, Contact));
         Add(Loc.T("help.license_title"), Loc.T("android.help_license"));
 
@@ -586,7 +599,18 @@ public sealed class MainView : UserControl
         body.Children.Add(new TextBlock { Text = Loc.T("settings.saves_text"), FontSize = 17, Foreground = Dim, TextWrapping = TextWrapping.Wrap });
 
         body.Children.Add(SectionLabel(Loc.T("settings.data")));
-        body.Children.Add(new TextBlock { Text = Loc.T("settings.data_dir", App.Paths.DataDir), FontSize = 17, Foreground = Dim, TextWrapping = TextWrapping.Wrap });
+        body.Children.Add(new TextBlock { Text = Loc.T("settings.data_dir", Friendly(App.Paths.DataDir)), FontSize = 17, Foreground = Dim, TextWrapping = TextWrapping.Wrap });
+        bool moveFolder = false;
+        if (!UsingSharedFolder)
+        {
+            var move = new Button
+            {
+                Content = new TextBlock { Text = Loc.T("android.storage_button"), FontSize = 20, TextWrapping = TextWrapping.Wrap },
+                Padding = new Thickness(20, 12),
+            };
+            move.Click += (_, _) => { moveFolder = true; _cancelDialog?.Invoke(); };
+            body.Children.Add(move);
+        }
         bool backup = false;
         var backupButton = new Button { Content = Plain(Loc.T("settings.backup")), FontSize = 20, Padding = new Thickness(20, 12) };
         backupButton.Click += (_, _) => { backup = true; _cancelDialog?.Invoke(); };
@@ -601,6 +625,7 @@ public sealed class MainView : UserControl
             catch (Exception ex) { Log.Error("Không lưu được cài đặt", ex); }
         }
         if (backup) await Backup();
+        if (moveFolder) { await OfferSharedFolder(); return; }
         if (newLanguage != null) App.SwitchLanguage(newLanguage);
     }
 
@@ -619,6 +644,92 @@ public sealed class MainView : UserControl
             Log.Error("Sao lưu lỗi", ex);
             await Info(Loc.T("backup.error_title"), ex.Message);
         }
+    }
+
+    // ------------------------------------------------------------------ Thư mục GameCenter ở bộ nhớ trong
+
+    private static bool UsingSharedFolder =>
+        string.Equals(App.Paths.DataDir, Storage.SharedDir, StringComparison.Ordinal);
+
+    private static string Friendly(string path) => Storage.Friendly(path, Loc.T("android.internal_storage"));
+
+    /// <summary>
+    /// Mời chuyển sang thư mục "GameCenter" ngay ở bộ nhớ trong (dễ chép game hơn thư mục trong Android/data).
+    /// Giải thích trước, rồi mới mở màn hình xin quyền của Android; người dùng tự bật quyền ở đó.
+    /// </summary>
+    private async Task OfferSharedFolder()
+    {
+        if (_overlay.IsVisible || _playing || UsingSharedFolder || MainActivity.Instance is not { } activity) return;
+        if (!await Confirm(Loc.T("android.storage_title"), Loc.T("android.storage_explain", Friendly(Storage.SharedDir)),
+                Loc.T("android.storage_go"), Loc.T("dialog.cancel"), true))
+            return;
+        if (Storage.HasAccess(activity))
+        {
+            await MoveToSharedFolder();
+            return;
+        }
+        _awaitingStorage = true;
+        try { Storage.RequestAccess(activity); }
+        catch (Exception ex)
+        {
+            _awaitingStorage = false;
+            Log.Error("Không mở được màn hình xin quyền truy cập file", ex);
+            await Info(Loc.T("android.storage_title"), Loc.T("android.storage_denied"));
+        }
+    }
+
+    /// <summary>App quay lại sau màn hình xin quyền: có quyền thì chuyển dữ liệu, không thì giữ nguyên thư mục cũ.</summary>
+    private async Task StorageAccessAnswered()
+    {
+        _awaitingStorage = false;
+        if (MainActivity.Instance is { } activity && Storage.HasAccess(activity)) await MoveToSharedFolder();
+        else await Info(Loc.T("android.storage_title"), Loc.T("android.storage_denied"));
+    }
+
+    private async Task MoveToSharedFolder()
+    {
+        while (_scanning) await Task.Delay(100);
+        _scanning = true; // chặn quét trong lúc chuyển file
+        var from = App.Paths.DataDir;
+        var to = Storage.SharedDir;
+        ShowBusy(Loc.T("android.storage_moving"));
+        int failed = -1;
+        try
+        {
+            failed = await Task.Run(() => Storage.Migrate(from, to));
+            Log.Info($"Chuyển thư mục dữ liệu: {from} -> {to}, {failed} file không chuyển được");
+        }
+        catch (Exception ex) { Log.Error("Chuyển thư mục dữ liệu lỗi", ex); }
+        HideBusy();
+        _scanning = false;
+        if (failed < 0)
+        {
+            await Info(Loc.T("android.storage_title"), Loc.T("android.storage_failed"));
+            return;
+        }
+        await Info(Loc.T("android.storage_title"),
+            Loc.T("android.storage_done", Friendly(Path.Combine(to, "Games"))) + (failed > 0 ? "\n\n" + Loc.T("android.storage_left", failed, Friendly(from)) : ""));
+        App.Restart();
+    }
+
+    /// <summary>Thông báo đang làm việc lâu (không có nút, không đóng được bằng Back).</summary>
+    private void ShowBusy(string text)
+    {
+        _cancelDialog = null;
+        _overlay.Children.Clear();
+        _overlay.Children.Add(new Border
+        {
+            Background = Panel, CornerRadius = new CornerRadius(14), Padding = new Thickness(28), Margin = new Thickness(20), MaxWidth = 680,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+            Child = new TextBlock { Text = text, FontSize = 22, TextWrapping = TextWrapping.Wrap },
+        });
+        _overlay.IsVisible = true;
+    }
+
+    private void HideBusy()
+    {
+        _overlay.IsVisible = false;
+        _overlay.Children.Clear();
     }
 
     // ------------------------------------------------------------------ Hộp thoại (lớp phủ)

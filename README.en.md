@@ -244,11 +244,14 @@ This branch adds an experimental Android version that has **not been released**.
 | GBA | mGBA | Runs on a real device |
 | PS1 | PCSX ReARMed (instead of Beetle PSX HW, because the app only has OpenGL ES) | Runs on a real device, no BIOS needed |
 | Arcade | FinalBurn Neo | Runs on a real device |
-| PS2 | none yet | Not playable on Android yet |
+| PS2 | Play! (emulates the BIOS itself, no BIOS file needed) | Shows a picture and runs on a real device; speed and per-game compatibility not evaluated. No "save my place", only in-game memory card saves |
+| PSP | PPSSPP | Packaged, only disc detection is tested; not yet run with a real game. Android only |
 
-Done: automatic game detection, accent-insensitive search, favorites, recently played, rename, choose console, manual disc merging, restoring older saves, save backup, Vietnamese / English, touch buttons (portrait and landscape), controllers, press-twice-to-quit, "save my place" on exit, in-game menu (☰ button: change disc, quit).
+Done: automatic game detection, accent-insensitive search, favorites, recently played, rename, choose console, manual disc merging, restoring older saves, save backup, Vietnamese / English, touch buttons (portrait and landscape) with a virtual analog stick for PS2 / PSP, controller support on the main screen too, press-twice-to-quit, "save my place" on exit, in-game menu (change disc, quit).
 
-Missing: cover pictures, PS2. The games folder currently lives in `Android/data/com.khuongdoan.gamecenter/files/Games` (copy over USB).
+By default the games folder lives in `Android/data/com.khuongdoan.gamecenter/files/Games`. **Settings** has a button to switch to a `GameCenter` folder right in internal storage (easier to copy games into; requires turning on file access when Android asks); existing games and saves are moved along.
+
+Missing: cover pictures. Not tried: a physical controller (only simulated key presses so far), Android TV.
 
 Build (Windows; needs the .NET 10 SDK with the `android` workload, the Android SDK + NDK, and JDK 17):
 

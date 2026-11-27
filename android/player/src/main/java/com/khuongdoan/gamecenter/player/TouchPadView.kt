@@ -68,11 +68,14 @@ class TouchPadView(
     private var pressed = emptySet<Int>()
     private val downAt = HashMap<Int, Long>()
 
-    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x40FFFFFF }
-    private val fillDown = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x90FFFFFF.toInt() }
-    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x90FFFFFF.toInt(); style = Paint.Style.STROKE }
-    private val shape = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xE0FFFFFF.toInt(); style = Paint.Style.FILL }
-    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xE0FFFFFF.toInt(); textAlign = Paint.Align.CENTER; isFakeBoldText = true }
+    // Nền nút tối trong mờ, viền và chữ trắng: thấy rõ trên cả cảnh game sáng lẫn tối. (Nền trắng trong mờ như trước
+    // gần như biến mất trên cảnh sáng, ví dụ màn hình logo nền trắng.) Nút đang bấm tô màu nhấn của app.
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x73101418 }
+    private val fillDown = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xD92E8BFF.toInt() }
+    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xCCFFFFFF.toInt(); style = Paint.Style.STROKE }
+    private val shape = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xF2FFFFFF.toInt(); style = Paint.Style.FILL }
+    private val knob = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xB3FFFFFF.toInt() }
+    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xF2FFFFFF.toInt(); textAlign = Paint.Align.CENTER; isFakeBoldText = true }
     private val path = Path()
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -127,7 +130,7 @@ class TouchPadView(
         if (analog) {
             canvas.drawCircle(stickX, stickY, stickR, fill)
             canvas.drawCircle(stickX, stickY, stickR, stroke)
-            canvas.drawCircle(stickX + stickValueX * stickR * 0.55f, stickY + stickValueY * stickR * 0.55f, stickR * 0.45f, fillDown)
+            canvas.drawCircle(stickX + stickValueX * stickR * 0.55f, stickY + stickValueY * stickR * 0.55f, stickR * 0.45f, knob)
         }
 
         for (b in buttons) {

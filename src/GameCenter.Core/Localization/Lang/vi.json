@@ -280,5 +280,16 @@
   "android.help_errors": "Game Center ghi lại lỗi trong file:\n{0}\nKhi cần hỗ trợ, hãy gửi file đó.",
   "android.help_license": "Game Center là phần mềm miễn phí: không bán, không quảng cáo, không có tính năng trả phí. Bản Android chạy game bằng LibretroDroid và các core libretro; mỗi thành phần giữ giấy phép riêng. Mã nguồn bản Android phát hành theo giấy phép GPL-3.0.",
   "android.help_pad": "• Lên / Xuống: chọn game\n• A: chơi\n• LB / RB: đổi mục (Tất cả, PS1, SNES...)\n• Y: thêm / bỏ yêu thích\n• X: thêm tùy chọn (đổi tên, khôi phục save...)\n• START: cài đặt   • SELECT: trợ giúp\n• B: đóng hộp thoại",
+  "android.loading": "Đang mở game…",
+  "android.internal_storage": "Bộ nhớ trong",
+  "android.storage_button": "Dùng thư mục GameCenter (dễ chép game hơn)",
+  "android.storage_title": "Thư mục GameCenter",
+  "android.storage_explain": "Hiện game nằm trong một thư mục khó tìm. Game Center có thể dùng thư mục dễ tìm hơn:\n{0}\n\nMàn hình tiếp theo của Android sẽ hỏi quyền truy cập file: hãy bật cho Game Center rồi quay lại đây. Game và save đang có sẽ được chuyển sang thư mục mới.",
+  "android.storage_go": "Tiếp tục",
+  "android.storage_moving": "Đang chuyển game và save sang thư mục mới…\nXin đừng tắt Game Center.",
+  "android.storage_done": "Xong. Từ giờ hãy chép game vào:\n{0}",
+  "android.storage_left": "Có {0} file chưa chuyển được, vẫn nằm ở:\n{1}",
+  "android.storage_denied": "Game Center chưa được cấp quyền truy cập file nên vẫn dùng thư mục cũ. Bạn có thể thử lại trong Cài đặt.",
+  "android.storage_failed": "Không chuyển được dữ liệu sang thư mục mới. Game Center vẫn dùng thư mục cũ; chi tiết đã ghi trong file log.",
   "android.unsupported": "Game này chưa chơi được trên Android."
 }

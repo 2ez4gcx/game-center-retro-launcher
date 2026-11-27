@@ -282,5 +282,16 @@
   "android.help_errors": "Game Center records errors in this file:\n{0}\nSend that file when you need help.",
   "android.help_license": "Game Center is free software: not sold, no ads, no paid features. The Android version runs games with LibretroDroid and libretro cores; each component keeps its own license. The source code of the Android version is released under the GPL-3.0 license.",
   "android.help_pad": "• Up / Down: choose a game\n• A: play\n• LB / RB: switch list (All, PS1, SNES...)\n• Y: add / remove favorite\n• X: more options (rename, restore a save...)\n• START: settings   • SELECT: help\n• B: close a dialog",
+  "android.loading": "Starting the game…",
+  "android.internal_storage": "Internal storage",
+  "android.storage_button": "Use the GameCenter folder (easier to copy games)",
+  "android.storage_title": "GameCenter folder",
+  "android.storage_explain": "Your games currently live in a folder that is hard to find. Game Center can use an easier one:\n{0}\n\nThe next Android screen asks for file access: turn it on for Game Center, then come back here. Your current games and saves will be moved to the new folder.",
+  "android.storage_go": "Continue",
+  "android.storage_moving": "Moving your games and saves to the new folder…\nPlease do not close Game Center.",
+  "android.storage_done": "Done. From now on, copy your games into:\n{0}",
+  "android.storage_left": "{0} files could not be moved and are still in:\n{1}",
+  "android.storage_denied": "Game Center was not given file access, so it keeps using the old folder. You can try again in Settings.",
+  "android.storage_failed": "The data could not be moved to the new folder. Game Center keeps using the old folder; details are in the log file.",
   "android.unsupported": "This game cannot be played on Android yet."
 }
