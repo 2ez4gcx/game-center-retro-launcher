@@ -98,6 +98,7 @@ Dùng RetroArch và core trong thư mục cài, ảnh đĩa PS1 và ROM Game Boy
 | Máy băng: "Chơi tiếp" sau khi đã save trong game — cấu hình 0.2.0 **mất save** (SRAM về bản cũ), 0.3.0 giữ bản mới nhất | ✅ (lỗi 0.2.0 tái hiện được, đã sửa) |
 | PS1: "Chơi tiếp" không kéo thẻ nhớ về quá khứ (Beetle không ghi đè thẻ nhớ khi nạp state; vẫn bật chặn để phòng) | ✅ |
 | Hai game trùng tên file (PS1 `LOD.cue` bản Việt hóa và bản gốc; Game Boy `game.gb` ở hai thư mục): mỗi game giữ save và chỗ đang chơi riêng, RetroArch ghi đúng thư mục riêng, file game không đổi | ✅ |
+| Máy không có driver Vulkan nhưng có `vulkan-1.dll` (giả bằng biến môi trường của bộ nạp Vulkan; máy Windows sạch của CI gặp thật): cấu hình cũ làm RetroArch thoát "Cannot open video driver", game PS1 không mở được; nay kiểm tra Vulkan thật → Direct3D 11 + vẽ phần mềm, game chạy | ✅ (lỗi tái hiện được, đã sửa) |
 | Không ghi file nào vào thư mục cài đặt (trước đây RetroArch ghi thời gian chơi `.lrtl` vào `Emulators/RetroArch/playlists/logs`; thư mục save riêng chưa tạo thì state rơi vào `Emulators/RetroArch/states`) | ✅ đã sửa cả hai |
 
 **Nâng cấp trên bản sao dữ liệu thật** (`-UpgradeFrom`, test `E2E_UpgradeFromExistingDataCopy`): chép thư mục dữ liệu của bản cũ sang thư mục tạm có dấu tiếng Việt, đổi đường dẫn trong database và `.cue` tự sinh sang chỗ mới (như nâng cấp tại chỗ), mở bằng bản mới; bản gốc không bị đụng tới. Lần chạy 27/11/2026 với dữ liệu 0.2.0 thật (4 game PS1: 2 game `.cue`, 2 game `.bin` không có `.cue`; 7 file save và chỗ đang chơi):

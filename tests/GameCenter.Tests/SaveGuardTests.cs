@@ -398,6 +398,23 @@ public class SaveGuardTests
         Assert.Equal("enabled", core["pcsx2_shared_memory_cards"]);
     }
 
+    /// <summary>
+    /// Không có Vulkan: Windows dùng Direct3D 11 (máy nào cũng có), Beetle vẽ bằng phần mềm. Kiểm tra Vulkan chỉ chạy
+    /// được cho hệ điều hành đang chạy, gọi nhiều lần cho cùng kết quả.
+    /// </summary>
+    [Fact]
+    public void NoVulkan_UsesSafeVideoDriver()
+    {
+        using var env = new TestEnv();
+        var win = new AppPaths(env.Paths.AppDir, env.Root, Os.Windows);
+        Assert.Equal("d3d11", RetroArchConfig.ManagedKeys(win, new AppSettings(), vulkanAvailable: false)["video_driver"]);
+        Assert.Equal("vulkan", RetroArchConfig.ManagedKeys(win, new AppSettings(), vulkanAvailable: true)["video_driver"]);
+        Assert.Equal("software", RetroArchConfig.ManagedCoreOptions(new AppSettings(), vulkanAvailable: false)["beetle_psx_hw_renderer"]);
+        var other = OsPlatform.Current == Os.Windows ? Os.Linux : Os.Windows;
+        Assert.False(VulkanProbe.IsUsable(other));
+        Assert.Equal(VulkanProbe.IsUsable(OsPlatform.Current), VulkanProbe.IsUsable(OsPlatform.Current));
+    }
+
     /// <summary>Ổ chứa save sắp đầy: cảnh báo trước khi chơi (kèm dung lượng còn trống và tên ổ).</summary>
     [Fact]
     public void LowDisk_WarnsBeforePlaying()

@@ -168,9 +168,12 @@ public static class RetroArchConfig
         };
     }
 
-    public static void Write(AppPaths paths, AppSettings settings)
+    public static void Write(AppPaths paths, AppSettings settings) =>
+        Write(paths, settings, OsPlatform.IsVulkanAvailable(paths.Os));
+
+    /// <summary>Ghi cấu hình với kết quả kiểm tra Vulkan cho trước (kiểm thử giả máy không có driver Vulkan).</summary>
+    public static void Write(AppPaths paths, AppSettings settings, bool vulkan)
     {
-        bool vulkan = OsPlatform.IsVulkanAvailable(paths.Os);
         MergeWrite(paths.RetroArchCfg, ManagedKeys(paths, settings, vulkan), paths.RetroArchBaseCfg);
         MergeWrite(paths.CoreOptionsCfg, ManagedCoreOptions(settings, vulkan), null);
     }

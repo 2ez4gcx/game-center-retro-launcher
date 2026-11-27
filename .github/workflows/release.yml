@@ -69,9 +69,6 @@ jobs:
         run: ./tools/installer-test.ps1 -Setup (Get-ChildItem dist/GameCenter-Setup-*.exe).FullName -Dir "$env:RUNNER_TEMP\Game Center thử"
       - name: Kiểm thử đầu-cuối với RetroArch trong bộ cài
         shell: pwsh
-        env:
-          # Máy ảo không có card đồ họa: RetroArch vẽ bằng Direct3D 11 (WARP)
-          GAMECENTER_E2E_VIDEO_DRIVER: d3d11
         run: ./tools/e2e-test.ps1 -AppDir "$env:RUNNER_TEMP\Game Center thử" -LogDir "$env:RUNNER_TEMP\e2e-logs"
       - uses: actions/upload-artifact@v4
         if: always()
