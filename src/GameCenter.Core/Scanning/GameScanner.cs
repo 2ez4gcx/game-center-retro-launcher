@@ -68,6 +68,9 @@ public sealed class GameScanner
     /// <summary>File BIOS người dùng chép nhầm vào thư mục Games: không hiện như game, Game Center chép sang thư mục BIOS.</summary>
     public List<string> BiosFiles { get; } = new();
 
+    /// <summary>Game nhiều đĩa người chơi tự ghép (<see cref="Data.DiscGroups"/>): file gốc các đĩa theo thứ tự, đường dẫn tuyệt đối.</summary>
+    public IReadOnlyList<IReadOnlyList<string>> ManualDiscGroups { get; init; } = Array.Empty<IReadOnlyList<string>>();
+
     public List<ScannedGame> Scan()
     {
         var result = new List<ScannedGame>();
@@ -82,6 +85,7 @@ public sealed class GameScanner
             catch (Exception ex) { Log.Error($"Lỗi khi quét {dir}", ex); }
         }
         MergeDiscFolders(result);
+        MergeManualGroups(result);
         CheckArcadeGames();
 
         // Sinh playlist .m3u cho game nhiều đĩa (sau khi đã có tên cuối cùng); .m3u người dùng tự tạo thì giữ nguyên.
@@ -133,6 +137,33 @@ public sealed class GameScanner
             merged.Discs.AddRange(discs.Select(d => d.LaunchFile));
             NoteMissingDiscs(merged, discs.Select(d => NameCleaner.DiscNumberOf(DiscName(d)!)));
             games.RemoveAll(discs.Contains);
+            games.Add(merged);
+        }
+    }
+
+    /// <summary>
+    /// Ghép các game người chơi tự ghép: theo thứ tự trong nhóm, game đầu là đĩa 1 (tên save theo đĩa 1, nên save của
+    /// đĩa 1 dùng tiếp). Game đã là bộ nhiều đĩa thì góp tất cả đĩa của nó. Chỉ ghép game đĩa cùng hệ máy; đĩa nào đã
+    /// bị xóa / chuyển chỗ thì ghép các đĩa còn lại.
+    /// </summary>
+    private void MergeManualGroups(List<ScannedGame> games)
+    {
+        foreach (var group in ManualDiscGroups)
+        {
+            var members = group
+                .Select(f => games.FirstOrDefault(g => g.Status == ScanStatus.Ok && _catalog.IsDiscPlatform(g.Platform)
+                                                       && g.SourceFile.Equals(Path.GetFullPath(f), StringComparison.OrdinalIgnoreCase)))
+                .OfType<ScannedGame>()
+                .Distinct()
+                .ToList();
+            if (members.Count < 2 || members.Any(m => m.Platform != members[0].Platform)) continue;
+
+            var first = members[0];
+            var merged = NewGame(first.SourceFile, first.Platform, first.Title, members.Sum(m => m.FileSize));
+            merged.Discs.AddRange(members.SelectMany(m => m.Discs.Count > 0 ? m.Discs : new List<string> { m.LaunchFile }));
+            // .m3u sinh lại sau khi quét (cả khi đĩa 1 là .m3u người dùng tự tạo)
+            merged.LaunchFile = merged.Discs[0];
+            games.RemoveAll(members.Contains);
             games.Add(merged);
         }
     }

@@ -68,7 +68,7 @@ Chỉ nhận lại save cho game **đã từng chơi** (số lần chơi > 0 ho�
 | M3 | Mỗi đĩa một thư mục: `The Legend of Dragoon (Disc 1) (VN)/LOD.cue`... hoặc `Tên/CD1/`, `Tên/CD2/` | Ghép các thư mục anh em cùng tên | 🆕 🧪 |
 | M4 | Thiếu đĩa ở giữa (có 1, 3, 4) | Vẫn chơi được, hiện cảnh báo "⚠ Thiếu đĩa 2" | 🆕 🧪 |
 | M5 | Trộn định dạng (đĩa 1 `.cue`, đĩa 2 `.chd`) cùng thư mục | Ghép | 🆕 |
-| M6 | Đĩa 1 bản Việt hóa, đĩa 2–4 bản gốc (tên khác nhau) | Không tự ghép được | 💡 nút "Ghép đĩa" chọn tay; hiện tại tự tạo `.m3u` (Game Center đọc được `.m3u` người dùng tạo) |
+| M6 | Đĩa 1 bản Việt hóa, đĩa 2–4 bản gốc (tên khác nhau) | Không tự ghép được → **⋯ → Ghép thêm đĩa**: chọn đĩa / bộ đĩa kế tiếp; nhóm lưu ở `Config/disc-groups.json` (đường dẫn tính từ Games), playlist theo tên đĩa 1 nên save của đĩa 1 dùng tiếp; **⋯ → Tách các đĩa đã ghép** để bỏ | 🆕 🧪 |
 | M7 | Đổi đĩa khi đang chơi | Menu RetroArch (L3 + R3 hoặc F1) → Điều khiển đĩa; Game Center hiện hướng dẫn trước khi chơi game nhiều đĩa | ✅ 🧪 (core báo hỗ trợ đổi đĩa, nạp 2 đĩa) |
 | M8 | Thoát khi đang ở đĩa 3, lần sau mở lại | RetroArch ghi đĩa đang dùng vào `<tên>.ldci` và mở lại đúng đĩa đó; Game Center giữ đường dẫn trong `.m3u` ổn định nên file này luôn khớp | 🆕 🧪 |
 | M9 | Mọi đĩa phải dùng chung một thẻ nhớ (save đĩa 1 load được ở đĩa 2) | Chạy qua `.m3u` → một thẻ nhớ `<tên>.srm`, không có thẻ riêng từng đĩa | ✅ 🧪 |
@@ -129,6 +129,5 @@ Làm trên **máy Windows sạch** và **máy đang dùng bản 0.2.0 có save t
 
 ## 5. Đề xuất tiếp theo
 
-- 💡 Nút "Ghép đĩa" chọn tay (M6).
 - 💡 Đọc log RetroArch sau mỗi lần chơi: nếu có lỗi ghi save (`[SRAM]` thất bại) thì báo ngay và giữ bản sao lưu.
 - ✅ Đã làm: job `installer-test` trên GitHub Actions (chạy tay hoặc khi đẩy tag) cài bộ cài thật trên máy Windows sạch, gỡ / cài lại giữ dữ liệu, rồi chạy `tools/e2e-test.ps1` với RetroArch trong bộ cài. RetroArch không còn tạo `cheats/<core>` trong thư mục cài (`cheat_database_path` → `Config/cheats`).
