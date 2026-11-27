@@ -1,5 +1,5 @@
 {
-  "_note": "Core đã chọn và kiểm tra license: xem Licenses/Core-LICENSES. Tên .dll khớp bản buildbot libretro (RetroArch 1.22.2). disc = game chạy từ đĩa.",
+  "_note": "Core đã chọn và kiểm tra license: xem Licenses/Core-LICENSES. Tên .dll khớp bản buildbot libretro (RetroArch 1.22.2). disc = game chạy từ đĩa. Arcade: nhận theo danh sách FBNeo (src/GameCenter.Core/Arcade), không theo đuôi file.",
   "platforms": [
     {
       "name": "NES",
@@ -92,6 +92,14 @@
         "required": true,
         "note": "LRPS2 cần BIOS PS2 thật, tìm trong <system>/pcsx2/bios (mọi file 4–8 MB có bảng ROMDIR). Game Center tự chép BIOS người dùng để ở BIOS/ hoặc BIOS/PS2/ sang đó."
       }
+    },
+    {
+      "name": "Arcade",
+      "displayName": "Arcade",
+      "folders": ["Arcade", "MAME", "FBNeo", "FBA", "FinalBurn", "FinalBurn Neo", "NeoGeo", "Neo Geo", "CPS1", "CPS2", "CPS3", "PGM", "Máy thùng", "May thung", "Game thùng", "Game thung"],
+      "core": "fbneo_libretro.dll",
+      "extensions": [".zip"],
+      "enabled": true
     }
   ]
 }

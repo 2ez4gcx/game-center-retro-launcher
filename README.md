@@ -7,7 +7,7 @@
 ![Windows · macOS · Linux](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-0a7bbb)
 ![Miễn phí, không quảng cáo](https://img.shields.io/badge/mi%E1%BB%85n%20ph%C3%AD-kh%C3%B4ng%20qu%E1%BA%A3ng%20c%C3%A1o-2ea44f)
 
-**Game Center** là phần mềm **miễn phí** để chơi lại game tuổi thơ trên máy tính **Windows, macOS và Linux**: PS1, PS2, điện tử 4 nút (NES), SNES, Game Boy, GBA, Sega Mega Drive, Master System và Game Gear. Thiết kế cho người lớn tuổi và người không rành máy tính: chữ lớn, nút to, chơi bằng tay cầm hoặc bàn phím, không phải cấu hình gì. Bên trong dùng trình giả lập RetroArch nhưng người chơi không cần biết tới nó. Giao diện **tiếng Việt và tiếng Anh** (bấm nút 🌐 ở góc trái để đổi).
+**Game Center** là phần mềm **miễn phí** để chơi lại game tuổi thơ trên máy tính **Windows, macOS và Linux**: PS1, PS2, điện tử 4 nút (NES), SNES, Game Boy, GBA, Sega Mega Drive, Master System, Game Gear và game thùng (máy thùng arcade: Khủng long, King of Fighters, Metal Slug, Tam Quốc Chí...). Thiết kế cho người lớn tuổi và người không rành máy tính: chữ lớn, nút to, chơi bằng tay cầm hoặc bàn phím, không phải cấu hình gì. Bên trong dùng trình giả lập RetroArch nhưng người chơi không cần biết tới nó. Giao diện **tiếng Việt và tiếng Anh** (bấm nút 🌐 ở góc trái để đổi).
 
 ```text
 Cài đặt → Next → Finish → Chép game → Chơi
@@ -17,8 +17,9 @@ Cài đặt → Next → Finish → Chép game → Chơi
 
 ## Tính năng chính
 
-- **Cài là chơi:** bộ cài đã kèm RetroArch và 7 core giả lập, không cần tải thêm hay cấu hình.
+- **Cài là chơi:** bộ cài đã kèm RetroArch và 8 core giả lập, không cần tải thêm hay cấu hình.
 - **Tự nhận game:** chép game vào thư mục `Games`, Game Center đọc nội dung file để biết game của máy nào (kể cả `.zip`, `.chd`, `.pbp`, `.bin` lẻ) và tự phân biệt đĩa PS1 với PS2.
+- **Game thùng:** chép file zip của game thùng vào là chơi; app hiện tên đầy đủ (`dino.zip` → Cadillacs and Dinosaurs) và báo trước nếu thiếu BIOS Neo Geo, thiếu bản gốc hay bộ ROM sai phiên bản.
 - **Game nhiều đĩa:** Final Fantasy VII, Metal Gear Solid, The Legend of Dragoon... tự ghép thành một game, đổi đĩa ngay khi đang chơi, mọi đĩa dùng chung một thẻ nhớ.
 - **Không mất save:** tự sao lưu save mỗi lần chơi (giữ 10 bản gần nhất) và khôi phục bản cũ ngay trong app; đổi tên file game thì save cũ vẫn đi theo.
 - **Khó bấm nhầm:** phải bấm thoát 2 lần mới ra khỏi game; lúc thoát, app hỏi có lưu chỗ đang chơi không bằng câu dễ hiểu.
@@ -53,10 +54,19 @@ Tải bản mới nhất ở mục [Releases](https://github.com/2ez4gcx/game-ce
 | Sega Mega Drive / Genesis | `.md`, `.gen`, `.smd`, `.bin`, `.zip` | Genesis Plus GX | Phi thương mại |
 | PS1 (PlayStation) | `.cue`, `.bin`, `.pbp`, `.chd`, `.ccd`, `.m3u` | Beetle PSX HW | GPLv2 |
 | **PS2** (PlayStation 2) | `.iso`, `.chd`, `.cso`, `.zso`, `.cue`/`.bin`, `.m3u` | LRPS2 | GPLv3 |
+| **Máy thùng** (arcade: Neo Geo, Capcom CPS1/2/3, PGM, Cave, Konami, Sega...) | `.zip`, `.7z` (bộ ROM FinalBurn Neo) | FinalBurn Neo | Phi thương mại |
 
 PS1 chơi được ngay không cần BIOS (OpenBIOS). Thêm BIOS bạn tự sao lưu vào thư mục `BIOS\` để tương thích tốt hơn.
 
 **PS2 bắt buộc có BIOS** sao lưu (dump) từ máy PS2 của bạn: chép file BIOS (thường là `SCPH-xxxxx.bin`, 4 MB, tên gì cũng được) thẳng vào thư mục `BIOS\`, Game Center tự chuyển vào đúng chỗ core cần (`BIOS\pcsx2\bios\`). PS2 cần máy tính khá mạnh (nên có CPU 4 nhân và card đồ họa rời hoặc đồ họa tích hợp đời mới) và tay cầm có cần analog. Bản PS2 trên Mac chip Apple chưa được kiểm tra.
+
+**Game thùng:** chép file `.zip` vào `Games\` (hoặc `Games\Arcade\`) và **giữ nguyên tên file**, đó là mã game (`dino.zip`, `kof98.zip`): giả lập nhận game theo tên file. Game Center hiện tên đầy đủ và kiểm tra bộ ROM theo danh sách của FinalBurn Neo:
+
+- Game Neo Geo (King of Fighters, Metal Slug...) cần BIOS `neogeo.zip`, game PGM (Tam Quốc Chí - Knights of Valour...) cần `pgm.zip`: chép vào thư mục `BIOS\`, để nguyên file zip. Thiếu thì Game Center báo trước, không mở màn hình lỗi.
+- Bản phụ (bản Nhật, bản hack như `kof97pls.zip`) cần file bản gốc (`kof97.zip`) nằm cùng thư mục.
+- Bộ ROM của MAME bản khác có thể thiếu file: Game Center báo ngay trên danh sách và hỏi trước khi chơi. Nên dùng bộ ROM dành cho FinalBurn Neo.
+- File đã bị đổi tên (`King of Fighters 98.zip`): Game Center nhận ra theo nội dung và chỉ đúng tên cần đặt lại.
+- Khi chơi: bấm **SELECT** (bàn phím: Space) để bỏ xu, rồi **START** (Enter) để bắt đầu. Lần đầu chơi mỗi game, Game Center nhắc lại cách bỏ xu.
 
 ## Game Center khác RetroArch thế nào?
 
@@ -65,9 +75,10 @@ Game Center **không thay thế** RetroArch mà là lớp giao diện đơn gi�
 | | RetroArch dùng một mình | Game Center |
 |---|---|---|
 | **Vai trò** | Trình giả lập đa hệ máy, chạy game | Launcher: quản lý game, gọi RetroArch để chơi |
-| **Cài đặt** | Tự tải từng core, tự cấu hình thư mục, BIOS, tay cầm | Bộ cài có sẵn RetroArch, 7 core và cấu hình |
+| **Cài đặt** | Tự tải từng core, tự cấu hình thư mục, BIOS, tay cầm | Bộ cài có sẵn RetroArch, 8 core và cấu hình |
 | **Thêm game** | Tự quét hoặc tạo playlist trong menu, phải chọn đúng core | Chép vào `Games`, tự nhận hệ máy theo nội dung file và tự hiện lên |
 | **PS1 / PS2** | Tự xử lý `.cue`, tự viết `.m3u` cho game nhiều đĩa, tự đặt BIOS PS2 đúng thư mục | Tự phân biệt đĩa PS1 / PS2, tự ghép đĩa, tự tạo `.cue` cho `.bin` lẻ, tự tạo `.m3u`, tự đặt BIOS PS2 |
+| **Game thùng** | Tự chọn core, tự đặt BIOS; bộ ROM thiếu file chỉ hiện lỗi tiếng Anh khi mở game | Hiện tên đầy đủ, báo trước thiếu BIOS / bản gốc / sai phiên bản, nhắc cách bỏ xu |
 | **Giao diện** | Menu nhiều tầng, chữ nhỏ, hàng trăm tùy chọn | Một màn hình, chữ lớn, nút "Chơi" |
 | **Điều khiển** | Phải tự gán phím, phím tắt mặc định dễ bấm nhầm (tua nhanh, tạm dừng…) | Phím WASD/IJKL có sẵn, đã tắt các phím tắt dễ nhầm, gán lại bằng cửa sổ đơn giản |
 | **Thoát game** | Phải biết tổ hợp phím hoặc vào menu | Luôn hiện hướng dẫn trên màn hình; phải bấm 2 lần mới thoát để tránh lỡ tay |
@@ -84,6 +95,7 @@ Nói ngắn gọn: **RetroArch** là "cỗ máy" chạy game, mạnh và linh ho
 - Đĩa PS1 hay PS2 được nhận theo nội dung đĩa (file `SYSTEM.CNF`), không cần để đúng thư mục.
 - `.bin` / `.rom` không có `.cue`: nhận đĩa PS1 / PS2 hoặc ROM băng (NES, Game Boy, GBA, Mega Drive, Master System...) theo header.
 - `.zip` nhiều ROM: mỗi ROM thành một game.
+- Game thùng: mỗi file `.zip` / `.7z` (tên là mã game) là một game, xem mục [Hệ máy hỗ trợ](#hệ-máy-hỗ-trợ).
 - File không chạy được (`.7z`, `.rar`, file nén nhiều phần, game đĩa trong `.zip`, game máy chưa hỗ trợ...) nằm ở mục **Chưa nhận ra** kèm hướng dẫn cách xử lý. Chi tiết mọi trường hợp: [docs/nhan-dien-file-nen.md](docs/nhan-dien-file-nen.md).
 - BIOS lỡ chép vào `Games\` được tự chuyển sang thư mục `BIOS\`.
 
@@ -157,9 +169,13 @@ PS1 không cần, chép game vào là chơi được. PS2 bắt buộc có BIOS 
 
 Được. Chép các đĩa vào cùng một chỗ (hoặc mỗi đĩa một thư mục), Game Center tự ghép thành một game. Khi game đòi đĩa tiếp theo, bấm **F1** → **Điều khiển đĩa** để đổi đĩa; hướng dẫn từng bước có trong nút **?** của app. Save trên thẻ nhớ dùng chung cho mọi đĩa.
 
+### Có chơi được game thùng (máy thùng, arcade) không?
+
+Được, bằng giả lập FinalBurn Neo đi kèm: Khủng long (Cadillacs and Dinosaurs), King of Fighters, Metal Slug, Tam Quốc Chí, Street Fighter, Captain Commando... Chép file zip của game vào `Games` và giữ nguyên tên file. Game Neo Geo cần thêm `neogeo.zip`, game PGM cần `pgm.zip` trong thư mục `BIOS`. Chi tiết ở mục [Hệ máy hỗ trợ](#hệ-máy-hỗ-trợ).
+
 ### File game là `.7z` hoặc `.rar` thì sao?
 
-Game hiện ở mục **Chưa nhận ra** kèm hướng dẫn: giải nén ra rồi chép vào `Games`. File `.zip` chứa game băng (NES, SNES, Game Boy, GBA, Mega Drive...) thì chơi thẳng được, không cần giải nén.
+Game hiện ở mục **Chưa nhận ra** kèm hướng dẫn: giải nén ra rồi chép vào `Games`. File `.zip` chứa game băng (NES, SNES, Game Boy, GBA, Mega Drive...) thì chơi thẳng được, không cần giải nén. Riêng game thùng thì để nguyên file `.zip` / `.7z`, đừng giải nén.
 
 ### Đang chơi dở trên ePSXe, DuckStation hay RetroArch, có mang save sang được không?
 
@@ -167,7 +183,7 @@ Save thẻ nhớ PS1 dùng lại được: xem phần **Dùng save thẻ nhớ P
 
 ### Máy tính yếu có chơi được không?
 
-Game các máy đời cũ (NES, SNES, Game Boy, GBA, Mega Drive) và PS1 rất nhẹ. PS2 nặng hơn nhiều: nên có CPU 4 nhân và card đồ họa rời hoặc đồ họa tích hợp đời mới.
+Game các máy đời cũ (NES, SNES, Game Boy, GBA, Mega Drive), phần lớn game thùng và PS1 rất nhẹ. PS2 nặng hơn nhiều: nên có CPU 4 nhân và card đồ họa rời hoặc đồ họa tích hợp đời mới.
 
 ### Game Center khác RetroArch thế nào?
 
@@ -196,12 +212,15 @@ Chạy với thư mục dữ liệu riêng khi kiểm thử: đặt biến môi 
 | `tools/package-linux.sh`, `tools/package-macos.sh` | Đóng gói AppImage (Linux) và .dmg (macOS) |
 | `.github/workflows/release.yml` | Kiểm thử trên 3 hệ điều hành; push tag `v*` thì tự đóng gói và tạo bản nháp Release |
 | `tools/fetch-retroarch.ps1` | Tải RetroArch, core và LICENSE vào thư mục publish |
+| `src/GameCenter.Core/Arcade` | Danh sách game thùng FinalBurn Neo (`fbneo.dat.gz`), kiểm tra bộ ROM, BIOS, bản gốc |
+| `tools/update-fbneo-dat.ps1` | Tạo lại danh sách game thùng từ DAT của FinalBurn Neo |
 
 Phát hành:
 
 ```
 ./build.ps1                                                   # test + publish self-contained (kèm .NET 8)
 ./tools/fetch-retroarch.ps1 -Version 1.22.2                   # RetroArch + core + LICENSE
+./tools/update-fbneo-dat.ps1                                   # danh sách game thùng khớp core FBNeo vừa tải
 ./tools/e2e-test.ps1 -AppDir ./publish/GameCenter             # kiểm thử với RetroArch thật (save, nhiều đĩa)
 & "C:\Program Files\Inno Setup 7\ISCC.exe" installer\GameCenter.iss
 ```
@@ -219,7 +238,7 @@ Thiết kế chi tiết: [GAME_CENTER_IMPLEMENTATION.md](GAME_CENTER_IMPLEMENTAT
 
 ## Giấy phép
 
-Game Center miễn phí, không quảng cáo, không tính năng trả phí. RetroArch và các core giữ giấy phép riêng (xem `Licenses/`). Snes9x và Genesis Plus GX chỉ cho phép phân phối phi thương mại. Game Center không phải sản phẩm chính thức của Sony, Nintendo hay Sega. Không kèm game hay BIOS.
+Game Center miễn phí, không quảng cáo, không tính năng trả phí. RetroArch và các core giữ giấy phép riêng (xem `Licenses/`). Snes9x, Genesis Plus GX và FinalBurn Neo chỉ cho phép phân phối phi thương mại. Game Center không phải sản phẩm chính thức của Sony, Nintendo, Sega, SNK, Capcom hay hãng game nào khác. Không kèm game hay BIOS.
 
 ---
 

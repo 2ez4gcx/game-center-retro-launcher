@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
+using GameCenter.Core.Arcade;
 using GameCenter.Core.Config;
 using GameCenter.Core.Localization;
 using GameCenter.Core.Util;
@@ -43,13 +44,26 @@ public sealed class GameScanner
     private readonly PlatformCatalog _catalog;
     private readonly string _gamesDir;
     private readonly string _playlistsDir;
+    private readonly string? _biosDir;
+    private ArcadeDatabase? _arcadeDb;
+    /// <summary>Game thùng đã nhận ra, kiểm tra bộ ROM sau khi quét hết (BIOS có thể nằm ở thư mục khác trong Games).</summary>
+    private readonly List<(ScannedGame Game, ArcadeSet Set, HashSet<uint>? Crcs)> _arcadeGames = new();
+    /// <summary>File BIOS game thùng tìm thấy trong Games (neogeo.zip...), theo mã bộ.</summary>
+    private readonly Dictionary<string, string> _arcadeBios = new(StringComparer.OrdinalIgnoreCase);
 
-    public GameScanner(PlatformCatalog catalog, string gamesDir, string playlistsDir)
+    /// <param name="biosDir">Thư mục BIOS (FBNeo tìm bộ gốc / BIOS game thùng ở đây); null: chỉ tìm cạnh file game.</param>
+    /// <param name="arcade">Danh sách game thùng; null: danh sách đi kèm Game Center.</param>
+    public GameScanner(PlatformCatalog catalog, string gamesDir, string playlistsDir, string? biosDir = null, ArcadeDatabase? arcade = null)
     {
         _catalog = catalog;
         _gamesDir = Path.GetFullPath(gamesDir);
         _playlistsDir = Path.GetFullPath(playlistsDir);
+        _biosDir = biosDir == null ? null : Path.GetFullPath(biosDir);
+        _arcadeDb = arcade;
     }
+
+    /// <summary>Danh sách game thùng (null nếu tắt hệ máy Arcade trong platforms.json). Chỉ nạp khi gặp file zip / 7z.</summary>
+    private ArcadeDatabase? Arcade => _catalog.Get(ArcadeDatabase.Platform) == null ? null : _arcadeDb ??= ArcadeDatabase.Default;
 
     /// <summary>File BIOS người dùng chép nhầm vào thư mục Games: không hiện như game, Game Center chép sang thư mục BIOS.</summary>
     public List<string> BiosFiles { get; } = new();
@@ -58,6 +72,8 @@ public sealed class GameScanner
     {
         var result = new List<ScannedGame>();
         BiosFiles.Clear();
+        _arcadeGames.Clear();
+        _arcadeBios.Clear();
         if (!Directory.Exists(_gamesDir)) return result;
 
         foreach (var dir in EnumerateDirs(_gamesDir))
@@ -66,6 +82,7 @@ public sealed class GameScanner
             catch (Exception ex) { Log.Error($"Lỗi khi quét {dir}", ex); }
         }
         MergeDiscFolders(result);
+        CheckArcadeGames();
 
         // Sinh playlist .m3u cho game nhiều đĩa (sau khi đã có tên cuối cùng); .m3u người dùng tự tạo thì giữ nguyên.
         // Tên .m3u theo file đĩa 1 bỏ phần "(Disc N)": RetroArch đặt tên thẻ nhớ theo file chạy → mọi đĩa dùng chung một thẻ nhớ.
@@ -274,6 +291,12 @@ public sealed class GameScanner
                 // .zip: xem nội dung bên trong
                 case ".zip":
                     dirGames.AddRange(ClassifyZip(f, hint));
+                    break;
+
+                // .7z: bộ ROM game thùng (FBNeo mở được .7z) theo tên; còn lại phải giải nén
+                case ".7z":
+                    if (ClassifyArcade7z(f, hint) is { } arcade7z) dirGames.AddRange(arcade7z);
+                    else if (NotPlayable(f) is { } archive) dirGames.Add(archive);
                     break;
 
                 default:
@@ -709,7 +732,8 @@ public sealed class GameScanner
     {
         var name = Path.GetFileName(zip);
         var single = NewGame(zip, null, Path.GetFileNameWithoutExtension(zip), new FileInfo(zip).Length);
-        bool hintTakesZip = hint != null && hint.Extensions.Contains(".zip");
+        // Zip trong thư mục máy băng (Games/NES...) mặc định là ROM của máy đó; thư mục game thùng thì không (phải có trong danh sách FBNeo)
+        bool hintTakesZip = hint != null && hint.Extensions.Contains(".zip") && hint.Name != ArcadeDatabase.Platform;
 
         // Đuôi .zip nhưng thật ra là 7z / rar (đổi đuôi nhầm)
         using (var fs = File.OpenRead(zip))
@@ -733,6 +757,9 @@ public sealed class GameScanner
                 return new() { single };
             }
 
+            // Bộ ROM game thùng: phải xét trước vì chip ROM hay có đuôi .bin / .rom (sẽ bị tách thành từng "ROM băng")
+            if (ClassifyArcadeZip(zip, entries, hint) is { } arcade) return arcade;
+
             var roms = entries
                 .Where(e => (_catalog.IsKnownExtension(Path.GetExtension(e.Name).ToLowerInvariant()) || Ext(e.Name) == ".rom")
                             && !DiscExtensions.Contains(Path.GetExtension(e.Name)) && Ext(e.Name) != ".zip")
@@ -750,7 +777,7 @@ public sealed class GameScanner
                         discInside || (roms.Count == 1 && IsCdImageEntry(roms[0])) ? Loc.T("scan.zip_disc") :
                         entries.Any(e => KnownFormats.Classify(e.Name, out _) is KnownFormats.Kind.Archive or KnownFormats.Kind.MultiPart || Ext(e.Name) == ".zip")
                             ? Loc.T("scan.extract_first", name) :
-                        roms.Count == 0 && LooksLikeArcade(entries) ? Loc.T("scan.arcade") :
+                        roms.Count == 0 && (LooksLikeArcade(entries) || hint?.Name == ArcadeDatabase.Platform) ? Loc.T("scan.arcade") :
                         roms.Count == 0 ? Loc.T("scan.zip_empty") : Loc.T("scan.zip_unknown"));
                 }
                 return new() { single };
@@ -789,13 +816,103 @@ public sealed class GameScanner
 
     /// <summary>
     /// Bộ ROM arcade (MAME, FBNeo, Neo Geo): nhiều file dump chip, đuôi lạ (.u1, .ic12, .p1, .m1...) hoặc không đuôi,
-    /// tên zip là mã game ("kof98.zip"). Chỉ dùng để báo cho rõ, không chạy.
+    /// tên zip là mã game ("kof98.zip"). Dùng để báo cho rõ khi bộ ROM không có trong danh sách FBNeo.
     /// </summary>
     private bool LooksLikeArcade(List<ZipArchiveEntry> entries)
     {
         if (entries.Count < 3 || entries.Any(e => Ext(e.Name) is ".exe" or ".dll")) return false; // game PC
         int chips = entries.Count(e => !ExtraExtensions.Contains(Path.GetExtension(e.Name)) && !_catalog.IsKnownExtension(Ext(e.Name)));
         return chips * 10 >= entries.Count * 6;
+    }
+
+    /// <summary>
+    /// Zip có file mang đuôi ROM băng rõ ràng (.nes, .sfc, .gba...; không tính .bin / .rom vì chip game thùng cũng hay dùng)
+    /// hoặc ảnh đĩa / file nén khác: không phải bộ ROM game thùng.
+    /// </summary>
+    private bool HasNonArcadeFile(List<ZipArchiveEntry> entries) =>
+        entries.Any(e => Ext(e.Name) is var ext && ext is not (".bin" or ".rom" or ".zip" or "")
+                         && (_catalog.IsKnownExtension(ext) || DiscExtensions.Contains(ext) || KnownFormats.Classify(e.Name, out _) != KnownFormats.Kind.None));
+
+    /// <summary>
+    /// Bộ ROM game thùng chạy bằng FinalBurn Neo: một zip là một game, chạy nguyên file zip (FBNeo nhận game theo tên file).
+    /// - Tên zip là mã game trong danh sách FBNeo (kof98.zip) và có ROM khớp CRC → game thùng.
+    ///   Trùng tên nhưng không khớp ROM nào: zip ROM băng tình cờ trùng tên (contra.zip chứa ROM NES) thì bỏ qua;
+    ///   còn lại là bộ ROM phiên bản khác (MAME cũ...) → vẫn nhận, báo có thể không chạy.
+    /// - Bộ BIOS (neogeo.zip, pgm.zip...) → không hiện như game, chép sang thư mục BIOS (<see cref="BiosFiles"/>).
+    /// - Tên đã bị đổi nhưng ROM khớp một bộ → báo đổi lại đúng tên.
+    /// Trả về null nếu không phải game thùng (danh sách rỗng nếu là BIOS).
+    /// </summary>
+    private List<ScannedGame>? ClassifyArcadeZip(string zip, List<ZipArchiveEntry> entries, PlatformDefinition? hint)
+    {
+        if (entries.Count == 0 || Arcade is not { } db) return null;
+        var crcs = entries.Select(e => e.Crc32).ToHashSet();
+        if (db.Get(Path.GetFileNameWithoutExtension(zip)) is { } set)
+        {
+            bool matches = set.OwnCrcs.Any(crcs.Contains) || set.ParentCrcs.Any(crcs.Contains);
+            if (!matches && (HasNonArcadeFile(entries) || entries.Count < 2)) return null;
+            if (set.IsBios)
+            {
+                if (!matches) return null;
+                BiosFiles.Add(zip);
+                _arcadeBios[set.Name] = zip;
+                return new();
+            }
+            return new() { AddArcadeGame(zip, set, crcs) };
+        }
+
+        // Đổi tên: chỉ thử với zip nhiều file không có ROM băng rõ ràng (zip ROM băng thường chỉ một file)
+        if (entries.Count < 2 || HasNonArcadeFile(entries) || db.Identify(crcs) is not { } renamed) return null;
+        var g = NewGame(zip, null, renamed.Title, new FileInfo(zip).Length);
+        MarkUnknown(g, Loc.T("arcade.renamed", renamed.Title, renamed.Name + ".zip"));
+        return new() { g };
+    }
+
+    /// <summary>.7z: không đọc được mục lục, nhận theo tên file (mã game FBNeo). Trong thư mục máy băng thì không nhận.</summary>
+    private List<ScannedGame>? ClassifyArcade7z(string file, PlatformDefinition? hint)
+    {
+        if (Arcade is not { } db || db.Get(Path.GetFileNameWithoutExtension(file)) is not { } set) return null;
+        if (hint != null && hint.Name != ArcadeDatabase.Platform) return null;
+        if (set.IsBios)
+        {
+            BiosFiles.Add(file);
+            _arcadeBios[set.Name] = file;
+            return new();
+        }
+        return new() { AddArcadeGame(file, set, null) };
+    }
+
+    private ScannedGame AddArcadeGame(string archive, ArcadeSet set, HashSet<uint>? crcs)
+    {
+        var g = NewGame(archive, ArcadeDatabase.Platform, set.Name, new FileInfo(archive).Length);
+        // NewGame bỏ phần trong ngoặc; bản phụ cần giữ để phân biệt các bản
+        g.Title = set.Title;
+        // Nhận ra game khi file được chuyển chỗ: mã từ CRC các ROM (không đổi khi chỉ chuyển thư mục)
+        if (crcs != null)
+            g.FileHash = Crc32.ComputeHex(new MemoryStream(crcs.Order().SelectMany(BitConverter.GetBytes).ToArray()));
+        if (set.NeedsDisk) MarkUnknown(g, Loc.T("arcade.needs_disk"));
+        else _arcadeGames.Add((g, set, crcs));
+        return g;
+    }
+
+    /// <summary>
+    /// Kiểm tra bộ ROM các game thùng (thiếu BIOS, thiếu bộ gốc, sai phiên bản) sau khi quét hết:
+    /// BIOS để trong Games (kể cả thư mục khác) cũng tính, vì Game Center chép nó sang thư mục BIOS ngay sau khi quét.
+    /// Game vẫn hiện để chơi, kèm lời nhắc; lúc bấm Chơi kiểm tra lại (<see cref="Emulation.EmulatorLauncher"/>).
+    /// </summary>
+    private void CheckArcadeGames()
+    {
+        if (_arcadeGames.Count == 0 || Arcade is not { } db) return;
+        foreach (var (g, set, crcs) in _arcadeGames)
+        {
+            var dirs = ArcadeRomCheck.SearchDirs(g.SourceFile, _biosDir);
+            var check = ArcadeRomCheck.Check(db, set, crcs, name =>
+            {
+                var found = ArcadeRomCheck.FindArchives(name, dirs);
+                if (_arcadeBios.TryGetValue(name, out var bios)) found.Add(bios);
+                return found;
+            });
+            g.Message = check.Message;
+        }
     }
 
     /// <summary>File thật trên ổ đĩa (bỏ phần "#rom" của đường dẫn bên trong zip).</summary>

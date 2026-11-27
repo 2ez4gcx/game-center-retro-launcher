@@ -9,10 +9,10 @@ Game Center là chương trình quản lý và mở game (launcher). Việc gi�
 và các core libretro thực hiện; mỗi thành phần giữ giấy phép riêng, xem các file trong
 thư mục Licenses sau khi cài đặt:
 - RetroArch (GPLv3), Beetle PSX HW (GPLv2), FCEUmm (GPLv2), Gambatte (GPLv2), mGBA (MPL 2.0)
-- Snes9x và Genesis Plus GX: giấy phép phi thương mại riêng, chỉ được phân phối miễn phí.
+- Snes9x, Genesis Plus GX và FinalBurn Neo (máy thùng): giấy phép phi thương mại riêng, chỉ được phân phối miễn phí.
 Mã nguồn các thành phần GPL: xem Licenses\RetroArch-SOURCE.txt.
 
-Game Center không phải sản phẩm chính thức của Sony, Nintendo hoặc Sega.
+Game Center không phải sản phẩm chính thức của Sony, Nintendo, Sega, SNK, Capcom hay hãng game nào khác.
 Bộ cài KHÔNG kèm game (ROM/ISO) hoặc BIOS thương mại. Bạn chỉ nên dùng game và BIOS
 mà bạn sở hữu hợp pháp.
 

@@ -51,7 +51,7 @@ public sealed class AppPaths
     public string LogFile => Path.Combine(LogsDir, "gamecenter.log");
     public string BackupsDir => Path.Combine(DataDir, "Backups");
 
-    public static readonly string[] DefaultPlatformFolders = { "NES", "SNES", "GB", "GBA", "MegaDrive", "PS1", "PS2" };
+    public static readonly string[] DefaultPlatformFolders = { "NES", "SNES", "GB", "GBA", "MegaDrive", "PS1", "PS2", "Arcade" };
 
     public void EnsureDataFolders()
     {

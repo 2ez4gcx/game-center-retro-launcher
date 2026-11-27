@@ -95,7 +95,7 @@ Kết luận: **ROM băng trong zip → chạy thẳng; game đĩa trong file n�
 | Z6 | Rác macOS `__MACOSX/`, `._tên` | tên mục | bỏ qua (trước đây `._game.sfc` bị coi là ROM) | 🆕 |
 | Z7 | Game đĩa (`.cue+.bin`, `.iso`, `.chd`, `.pbp`) | đuôi mục, hoặc `.bin` có sync CD | báo "game đĩa phải giải nén" | 🆕 |
 | Z8 | Zip lồng zip / chứa 7z, rar | đuôi mục | báo "hãy giải nén" | 🆕 |
-| Z9 | Bộ ROM arcade (MAME / FBNeo / Neo Geo): `kof98.zip` chứa `242-p1.p1`... | ≥ 3 mục, đa số đuôi lạ, không có `.exe` | báo "game arcade, chưa hỗ trợ" | 🆕 · 💡 hỗ trợ arcade cần core FBNeo (giấy phép phi thương mại) và đúng phiên bản romset |
+| Z9 | Bộ ROM arcade (MAME / FBNeo / Neo Geo): `kof98.zip` chứa `242-p1.p1`... | ≥ 3 mục, đa số đuôi lạ, không có `.exe` | tên zip là mã game trong danh sách FinalBurn Neo (`Arcade/fbneo.dat.gz`) và CRC trong mục lục zip khớp → game thùng, chạy nguyên file zip bằng FBNeo; kiểm tra BIOS (`neogeo.zip`...), bộ gốc của bản phụ, bộ ROM khác phiên bản. Đổi tên → nhận theo CRC, báo tên đúng. Không có trong danh sách → báo "FBNeo không chạy được game thùng này" | ✅ |
 | Z10 | Có mật khẩu | cờ mã hóa | báo | 🆕 |
 | Z11 | Nén LZMA / BZip2 / Zstd | không đọc được mục | báo "hãy giải nén" | 🆕 |
 | Z12 | Đuôi `.zip` nhưng là 7z / rar | magic | báo "hãy giải nén" | 🆕 |

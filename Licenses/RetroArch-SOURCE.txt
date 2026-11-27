@@ -10,3 +10,4 @@ Core đóng gói (bản build libretro buildbot, windows x86_64), mã nguồn:
   mGBA (MPL 2.0):                https://github.com/libretro/mgba
   Snes9x (phi thương mại):       https://github.com/libretro/snes9x
   Genesis Plus GX (phi thương mại): https://github.com/libretro/Genesis-Plus-GX
+  FinalBurn Neo (phi thương mại): https://github.com/libretro/FBNeo

@@ -4,6 +4,7 @@
 > - **PS2** qua core **LRPS2** (`pcsx2_libretro`, GPLv3, mã nguồn libretro/parallel-ps2). BIOS bắt buộc: Game Center nhận BIOS PS2 theo nội dung (file 4–8 MB có bảng ROMDIR `RESET` → `ROMDIR`), tự chép từ `BIOS/` hoặc `BIOS/PS2/` sang `BIOS/pcsx2/bios/` nơi core tìm. Không đóng gói BIOS.
 > - Phân biệt đĩa PS1 / PS2 theo `SYSTEM.CNF` (`BOOT2` = PS2), đọc được `.iso`, `.bin` thô, `.cso`; `.chd` theo metadata (DVD = PS2). Game nhiều đĩa ghép theo từng hệ máy, kể cả đĩa rời `.chd` / `.iso`.
 > - **Master System / Game Gear** dùng Genesis Plus GX đã đóng gói.
+> - **Game thùng (arcade)** qua core **FinalBurn Neo** (`fbneo_libretro`, giấy phép phi thương mại, phải kèm nguyên văn `Licenses/Core-LICENSES/fbneo.txt`). Nhận game theo danh sách FBNeo nhúng trong app (`src/GameCenter.Core/Arcade/fbneo.dat.gz`, tạo bằng `tools/update-fbneo-dat.ps1`): tên zip là mã game + CRC trong mục lục zip. Chạy nguyên file zip; FBNeo tìm bộ gốc / BIOS cạnh file game, `BIOS/fbneo`, `BIOS` (gộp mọi bản tìm thấy) → Game Center kiểm tra đúng các chỗ đó trước khi chạy. Tắt phím giữ START vào menu kỹ thuật (`fbneo-diagnostic-input = None`).
 > - **Đa ngôn ngữ** (tiếng Việt, tiếng Anh): chuỗi trong `src/GameCenter.Core/Localization/Lang/*.json`; ngôn ngữ lần đầu lấy theo bộ cài Windows (`Defaults/installer.ini`), bản cũ giữ tiếng Việt, còn lại theo hệ điều hành. Menu RetroArch cùng ngôn ngữ (`user_language`).
 > - Nhận diện file nén / định dạng lạ và báo rõ cách xử lý: xem [docs/nhan-dien-file-nen.md](docs/nhan-dien-file-nen.md).
 > - **Bảo toàn save** (xem [docs/bao-toan-save.md](docs/bao-toan-save.md)): nhận lại save khi tên file chạy đổi, tên save riêng cho game trùng tên file (`EBOOT.PBP`), sao lưu tự động trước mỗi lần chơi + khôi phục, `block_sram_overwrite = true` (sửa lỗi "Chơi tiếp" làm mất save trong game của máy băng ở 0.2.0), cố định tùy chọn thẻ nhớ của core, không ghi `.lrtl` vào thư mục cài đặt. Kiểm thử đầu-cuối với RetroArch thật: `tools/e2e-test.ps1`.
@@ -50,7 +51,6 @@ Danh sách định dạng PS1 cần kiểm tra lại theo tài liệu của core
 ### Có thể bổ sung sau
 
 - Nintendo 64.
-- Arcade/Neo Geo (lưu ý: FBNeo là giấy phép phi thương mại).
 - PC Engine.
 - Nintendo DS.
 - PSP.

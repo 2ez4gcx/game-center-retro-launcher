@@ -159,6 +159,9 @@ public static class RetroArchConfig
             ["beetle_psx_hw_use_mednafen_memcard0_method"] = "libretro",
             // PS2: thẻ nhớ dùng chung mọi game như máy thật (BIOS/pcsx2/memcards), không phụ thuộc tên file game
             ["pcsx2_shared_memory_cards"] = "enabled",
+            // Game thùng: FBNeo mặc định giữ START là vào menu kỹ thuật của máy thùng (service menu) → dễ lạc vào khi
+            // giữ START lâu hoặc lúc bấm START + SELECT để thoát. Tắt hẳn.
+            ["fbneo-diagnostic-input"] = "None",
         };
     }
 

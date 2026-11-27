@@ -15,4 +15,9 @@
     <EmbeddedResource Include="Localization\Lang\*.json" LogicalName="GameCenter.Core.Localization.Lang.%(Filename)%(Extension)" />
   </ItemGroup>
 
+  <!-- Danh sách game thùng FinalBurn Neo (tạo bằng tools/update-fbneo-dat.ps1) -->
+  <ItemGroup>
+    <EmbeddedResource Include="Arcade\fbneo.dat.gz" LogicalName="GameCenter.Core.Arcade.fbneo.dat.gz" />
+  </ItemGroup>
+
 </Project>

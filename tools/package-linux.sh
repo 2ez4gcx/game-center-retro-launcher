@@ -16,7 +16,7 @@ APPDIR="$OUT/GameCenter.AppDir"
 APP="$APPDIR/usr/lib/gamecenter"
 EMU="$APP/Emulators/RetroArch"
 WORK="$OUT/work"
-CORES=(mednafen_psx_hw pcsx2 snes9x mgba genesis_plus_gx fceumm gambatte)
+CORES=(mednafen_psx_hw pcsx2 snes9x mgba genesis_plus_gx fceumm gambatte fbneo)
 
 rm -rf "$OUT"
 mkdir -p "$APP" "$WORK"

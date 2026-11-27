@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using GameCenter.Core.Config;
 using GameCenter.Core.Data;
 using GameCenter.Core.Emulation;
+using GameCenter.Core.Scanning;
 using Xunit.Abstractions;
 
 namespace GameCenter.Tests;
@@ -329,5 +330,61 @@ public class RetroArchE2ETests
                 Assert.NotNull(new SaveStateService(locs[i].StatesDir).FindAutoState(games[i].LaunchFile));
             }
         }
+    }
+
+    /// <summary>
+    /// Game thùng với core FinalBurn Neo thật: RetroArch đưa nguyên file zip cho core (không giải nén), và FBNeo tìm
+    /// BIOS / bộ gốc ở đúng các chỗ Game Center kiểm tra trước khi chạy (cạnh file game, BIOS/fbneo, BIOS).
+    /// Không có ROM thật nên dùng ROM giả: FBNeo vẫn mở game và báo thiếu ROM trên màn hình, đủ để xem nó tìm file ở đâu.
+    /// </summary>
+    [Fact]
+    public void E2E_Arcade_FbneoGetsZip_AndSearchesWhereGameCenterChecks()
+    {
+        if (AppDir() is not { } appDir) { _out.WriteLine("Bỏ qua: chưa đặt GAMECENTER_E2E_APPDIR"); return; }
+        using var env = new TestEnv();
+        var paths = new AppPaths(appDir, env.Root);
+        paths.EnsureDataFolders();
+        var core = paths.CorePath("fbneo_libretro.dll");
+        if (!File.Exists(core)) { _out.WriteLine("Bỏ qua: chưa có core FBNeo"); return; }
+
+        static void Zip(string path, params string[] entries)
+        {
+            using var z = System.IO.Compression.ZipFile.Open(path, System.IO.Compression.ZipArchiveMode.Create);
+            foreach (var entry in entries)
+            {
+                using var s = z.CreateEntry(entry).Open();
+                s.Write(Encoding.ASCII.GetBytes("ROM GIA " + entry));
+            }
+        }
+        // kof97pls: bản phụ của kof97 (bộ gốc để cạnh), cần BIOS neogeo (để trong thư mục BIOS)
+        var game = Path.GetFullPath(env.File("Arcade/kof97pls.zip"));
+        File.Delete(game);
+        Zip(game, "kf97-p1p.bin", "kf97-p2p.bin", "kf97-s1p.bin");
+        Zip(Path.Combine(Path.GetDirectoryName(game)!, "kof97.zip"), "232-p1.p1", "232-m1.m1");
+        Zip(Path.Combine(paths.BiosDir, "neogeo.zip"), "sfix.sfix", "sm1.sm1");
+
+        var scanner = new GameScanner(env.Catalog, paths.GamesDir, paths.PlaylistsDir, paths.BiosDir);
+        var db = new GameDatabase(paths.DatabaseFile);
+        db.Initialize(env.Catalog);
+        db.ApplyScan(scanner.Scan());
+        var record = db.GetGames().Single(g => g.SourceFile == game);
+        Assert.Equal("Arcade", record.Platform);
+        Assert.Equal("The King of Fighters '97 Plus (bootleg)", record.Title);
+
+        // ROM giả: Game Center báo trước (ROM khác phiên bản → hỏi "Vẫn chơi"), không chặn
+        var launcher = new EmulatorLauncher(paths, env.Catalog, Settings);
+        var plan = launcher.Plan(record);
+        Assert.Equal(LaunchProblem.None, plan.Problem);
+        Assert.NotNull(plan.Warning);
+        Assert.Equal(game, plan.StartInfo!.ArgumentList[^1]);
+
+        var log = Launch(paths, plan.StartInfo);
+        foreach (var line in log.Split('\n').Where(l => l.Contains("[FBNeo]")).Take(40))
+            _out.WriteLine("  FBNeo | " + line.TrimEnd());
+        // Core nhận đúng file zip (RetroArch không giải nén ra thư mục tạm)
+        Assert.Contains("Romset found at " + Path.Combine(Path.GetDirectoryName(game)!, "kof97pls"), log);
+        // Bộ gốc cạnh file game, BIOS trong thư mục BIOS: đúng như Game Center tìm
+        Assert.Contains("Romset found at " + Path.Combine(Path.GetDirectoryName(game)!, "kof97"), log);
+        Assert.Contains("Romset found at " + Path.Combine(paths.BiosDir, "neogeo"), log);
     }
 }

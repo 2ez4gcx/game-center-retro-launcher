@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using GameCenter.Core.Arcade;
 using GameCenter.Core.Config;
 using GameCenter.Core.Data;
 using GameCenter.Core.Localization;
@@ -17,9 +18,14 @@ public enum LaunchProblem
     CoreMissing,
     BiosMissing,
     DuckStationMissing,
+    /// <summary>Game thùng là bản phụ, thiếu zip bộ gốc.</summary>
+    ArcadeParentMissing,
+    /// <summary>Game thùng không có trong danh sách FBNeo (tên file bị đổi, game chỉ MAME chạy...).</summary>
+    ArcadeNotInList,
 }
 
-public sealed record LaunchPlan(LaunchProblem Problem, string Message, ProcessStartInfo? StartInfo = null);
+/// <param name="Warning">Chạy được nhưng nên hỏi người chơi trước (ví dụ bộ ROM game thùng khác phiên bản).</param>
+public sealed record LaunchPlan(LaunchProblem Problem, string Message, ProcessStartInfo? StartInfo = null, string? Warning = null);
 
 /// <summary>Chọn core, tạo command line và khởi chạy RetroArch (mục 10).</summary>
 public sealed class EmulatorLauncher
@@ -27,12 +33,15 @@ public sealed class EmulatorLauncher
     private readonly AppPaths _paths;
     private readonly PlatformCatalog _catalog;
     private readonly AppSettings _settings;
+    private readonly ArcadeDatabase? _arcade;
 
-    public EmulatorLauncher(AppPaths paths, PlatformCatalog catalog, AppSettings settings)
+    /// <param name="arcade">Danh sách game thùng; null: danh sách đi kèm Game Center.</param>
+    public EmulatorLauncher(AppPaths paths, PlatformCatalog catalog, AppSettings settings, ArcadeDatabase? arcade = null)
     {
         _paths = paths;
         _catalog = catalog;
         _settings = settings;
+        _arcade = arcade;
     }
 
     public LaunchPlan Plan(GameRecord game)
@@ -63,14 +72,46 @@ public sealed class EmulatorLauncher
 
         var core = _paths.CorePath(platform.Core);
         if (!File.Exists(core))
-            return new(LaunchProblem.CoreMissing, Loc.T("launch.core_missing", platform.DisplayName, Path.GetFileName(core)));
+            return new(LaunchProblem.CoreMissing, Loc.T("launch.core_missing", platform.Label, Path.GetFileName(core)));
 
         try { BiosChecker.Prepare(platform, _paths.BiosDir); }
         catch (Exception ex) { Log.Error($"Không chuẩn bị được BIOS {platform.Name}", ex); }
         if (BiosChecker.Check(platform, _paths.BiosDir) == BiosState.Missing)
             return new(LaunchProblem.BiosMissing, BiosMissingMessage(platform));
 
-        return new(LaunchProblem.None, "", BuildRetroArchStartInfo(core, game.LaunchFile));
+        string? warning = null;
+        if (platform.Name == ArcadeDatabase.Platform && CheckArcade(game.LaunchFile, out warning) is { } problem)
+            return problem;
+        return new(LaunchProblem.None, "", BuildRetroArchStartInfo(core, game.LaunchFile), warning);
+    }
+
+    /// <summary>
+    /// Game thùng: kiểm tra lại bộ ROM ngay trước khi chạy (người chơi có thể vừa chép thêm BIOS / bộ gốc),
+    /// để báo rõ thay vì màn hình lỗi tiếng Anh của FBNeo. Thiếu BIOS / bộ gốc: không chạy.
+    /// Bộ ROM khác phiên bản: vẫn cho thử, kèm <paramref name="warning"/>.
+    /// </summary>
+    private LaunchPlan? CheckArcade(string file, out string? warning)
+    {
+        warning = null;
+        var db = _arcade ?? ArcadeDatabase.Default;
+        if (db.Get(Path.GetFileNameWithoutExtension(file)) is not { } set)
+        {
+            var renamed = ArcadeRomCheck.ReadCrcs(file) is { } crcs ? db.Identify(crcs) : null;
+            return new(LaunchProblem.ArcadeNotInList,
+                renamed != null ? Loc.T("arcade.renamed", renamed.Title, renamed.Name + ".zip") : Loc.T("scan.arcade"));
+        }
+        var check = ArcadeRomCheck.Check(db, set, file, _paths.BiosDir);
+        switch (check.Issue)
+        {
+            case ArcadeIssue.MissingBios or ArcadeIssue.BadBios:
+                return new(LaunchProblem.BiosMissing, check.Message!);
+            case ArcadeIssue.MissingParent:
+                return new(LaunchProblem.ArcadeParentMissing, check.Message!);
+            case ArcadeIssue.WrongVersion:
+                warning = check.Message;
+                break;
+        }
+        return null;
     }
 
     /// <summary>Hướng dẫn riêng từng hệ máy nếu có (khóa "launch.bios_missing.&lt;hệ máy&gt;"), không thì câu chung.</summary>

@@ -73,6 +73,7 @@ Name: "{app}\Games\GBA";       Flags: uninsneveruninstall
 Name: "{app}\Games\MegaDrive"; Flags: uninsneveruninstall
 Name: "{app}\Games\PS1";       Flags: uninsneveruninstall
 Name: "{app}\Games\PS2";       Flags: uninsneveruninstall
+Name: "{app}\Games\Arcade";    Flags: uninsneveruninstall
 Name: "{app}\BIOS";            Flags: uninsneveruninstall
 Name: "{app}\Saves";           Flags: uninsneveruninstall
 Name: "{app}\States";          Flags: uninsneveruninstall

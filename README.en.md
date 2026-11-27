@@ -7,7 +7,7 @@
 ![Windows · macOS · Linux](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-0a7bbb)
 ![Free, no ads](https://img.shields.io/badge/free-no%20ads-2ea44f)
 
-**Game Center** is a **free** emulator frontend for **Windows, macOS and Linux** that lets anyone play classic console games: PlayStation (PS1), PlayStation 2 (PS2), NES, SNES, Game Boy, Game Boy Advance, Sega Mega Drive / Genesis, Master System and Game Gear. It is designed for older players and anyone who is not comfortable with computers: large text, big buttons, controller or keyboard, nothing to configure. Under the hood it runs RetroArch, but the player never has to deal with it. The interface is available in **English and Vietnamese** (click the 🌐 button in the bottom-left corner to switch).
+**Game Center** is a **free** emulator frontend for **Windows, macOS and Linux** that lets anyone play classic console games: PlayStation (PS1), PlayStation 2 (PS2), NES, SNES, Game Boy, Game Boy Advance, Sega Mega Drive / Genesis, Master System, Game Gear and arcade games (Neo Geo, Capcom CPS1/CPS2, PGM: King of Fighters, Metal Slug, Cadillacs and Dinosaurs...). It is designed for older players and anyone who is not comfortable with computers: large text, big buttons, controller or keyboard, nothing to configure. Under the hood it runs RetroArch, but the player never has to deal with it. The interface is available in **English and Vietnamese** (click the 🌐 button in the bottom-left corner to switch).
 
 ```text
 Install → Next → Finish → Copy games → Play
@@ -17,8 +17,9 @@ Install → Next → Finish → Copy games → Play
 
 ## Features
 
-- **Install and play:** the installer ships RetroArch and 7 emulator cores; nothing else to download or configure.
+- **Install and play:** the installer ships RetroArch and 8 emulator cores; nothing else to download or configure.
 - **Automatic game detection:** copy games into the `Games` folder and Game Center reads the file content to work out which console each game is for (including `.zip`, `.chd`, `.pbp` and loose `.bin` files), telling PS1 and PS2 discs apart.
+- **Arcade games:** copy an arcade game's zip file in and play; the app shows the full name (`dino.zip` → Cadillacs and Dinosaurs) and warns up front about a missing Neo Geo BIOS, a missing parent set or a ROM set from the wrong version.
 - **Multi-disc games:** Final Fantasy VII, Metal Gear Solid, The Legend of Dragoon... are merged into one entry, discs can be swapped while playing, and all discs share one memory card.
 - **Saves are never lost:** each game's saves are backed up every time you play (the last 10 are kept) and can be restored from inside the app; renaming a game file keeps its saves.
 - **Hard to press the wrong button:** exiting a game takes two presses, and Game Center asks in plain words whether to save your place.
@@ -53,10 +54,19 @@ Get the latest version from [Releases](https://github.com/2ez4gcx/game-center-re
 | Sega Mega Drive / Genesis | `.md`, `.gen`, `.smd`, `.bin`, `.zip` | Genesis Plus GX | Non-commercial |
 | PS1 (PlayStation) | `.cue`, `.bin`, `.pbp`, `.chd`, `.ccd`, `.m3u` | Beetle PSX HW | GPLv2 |
 | **PS2** (PlayStation 2) | `.iso`, `.chd`, `.cso`, `.zso`, `.cue`/`.bin`, `.m3u` | LRPS2 | GPLv3 |
+| **Arcade** (Neo Geo, Capcom CPS1/2/3, PGM, Cave, Konami, Sega...) | `.zip`, `.7z` (FinalBurn Neo ROM sets) | FinalBurn Neo | Non-commercial |
 
 PS1 games run without a BIOS (OpenBIOS). Adding a BIOS you backed up yourself to the `BIOS` folder improves compatibility.
 
 **PS2 requires a BIOS** dumped from your own PS2: copy the BIOS file (usually `SCPH-xxxxx.bin`, 4 MB, any name works) straight into the `BIOS` folder and Game Center moves it to where the core expects it (`BIOS/pcsx2/bios/`). PS2 needs a fairly powerful computer (a 4-core CPU and a dedicated or recent built-in GPU) and a controller with analog sticks. PS2 on Apple-chip Macs is untested.
+
+**Arcade games:** copy the `.zip` file into `Games` (or `Games/Arcade`) and **keep its file name**, which is the game code (`dino.zip`, `kof98.zip`): the emulator recognizes games by file name. Game Center shows the full name and checks the ROM set against FinalBurn Neo's list:
+
+- Neo Geo games (King of Fighters, Metal Slug...) need the BIOS `neogeo.zip` and PGM games (Knights of Valour...) need `pgm.zip`: copy them into the `BIOS` folder as zip files. If one is missing, Game Center says so instead of opening an error screen.
+- Variants (Japanese versions, hacks such as `kof97pls.zip`) need the original game's file (`kof97.zip`) in the same folder.
+- MAME ROM sets from other versions may be missing files: Game Center flags this in the list and asks before playing. ROM sets made for FinalBurn Neo are recommended.
+- Renamed files (`King of Fighters 98.zip`): Game Center recognizes them by content and tells you the right name to use.
+- While playing: press **SELECT** (keyboard: Space) to insert a coin, then **START** (Enter). The first time you play each game, Game Center reminds you how.
 
 ## How is Game Center different from RetroArch?
 
@@ -65,9 +75,10 @@ Game Center **does not replace** RetroArch; it is a simple layer on top. RetroAr
 | | RetroArch on its own | Game Center |
 |---|---|---|
 | **Role** | Multi-system emulator that runs games | Launcher: manages games, calls RetroArch to play |
-| **Setup** | Download each core, set up folders, BIOS, controllers yourself | Installer ships RetroArch, 7 cores and the configuration |
+| **Setup** | Download each core, set up folders, BIOS, controllers yourself | Installer ships RetroArch, 8 cores and the configuration |
 | **Adding games** | Scan or build playlists in the menu, pick the right core | Copy into `Games`; the console is detected from the file content |
 | **PS1 / PS2** | Handle `.cue` files, write `.m3u` for multi-disc games, place the PS2 BIOS yourself | Tells PS1 and PS2 discs apart, merges discs, creates `.cue` for loose `.bin`, creates `.m3u`, places the PS2 BIOS |
+| **Arcade** | Pick the core and place the BIOS yourself; an incomplete ROM set only shows an English error once the game opens | Shows full names, warns up front about a missing BIOS / parent set / wrong version, explains how to insert a coin |
 | **Interface** | Many nested menus, small text, hundreds of options | One screen, large text, a "Play" button |
 | **Controls** | Map buttons yourself; default hotkeys are easy to hit by accident | WASD/IJKL keys out of the box, risky hotkeys disabled, simple key-mapping window |
 | **Exiting a game** | Need to know the key combo or use the menu | Always shown on screen; press twice to exit so a slip does not lose progress |
@@ -82,6 +93,7 @@ Game Center **does not replace** RetroArch; it is a simple layer on top. RetroAr
 - PS1 vs PS2 discs are told apart by their content (`SYSTEM.CNF`), no need to sort them into folders.
 - `.bin` / `.rom` without `.cue`: detected as a PS1 / PS2 disc or a cartridge ROM (NES, Game Boy, GBA, Mega Drive, Master System...) from its header.
 - `.zip` with several ROMs: each ROM becomes a game.
+- Arcade games: each `.zip` / `.7z` file (named after the game code) is one game, see [Supported consoles](#supported-consoles).
 - Files that cannot run (`.7z`, `.rar`, multi-part archives, disc games inside `.zip`, consoles not supported yet...) appear under **Not recognized** with instructions. All cases are described (in Vietnamese) in [docs/nhan-dien-file-nen.md](docs/nhan-dien-file-nen.md).
 - BIOS files copied into `Games` by mistake are moved to the `BIOS` folder automatically.
 
@@ -151,9 +163,13 @@ PS1 games run without one: copy them in and play. PS2 requires a BIOS dumped fro
 
 Yes. Put the discs in the same place (or one folder per disc) and Game Center merges them into one game. When the game asks for the next disc, press **F1** → **Disc Control** to swap it; step-by-step instructions are behind the **?** button in the app. The memory card is shared by all discs.
 
+### Can I play arcade games?
+
+Yes, with the bundled FinalBurn Neo emulator: King of Fighters, Metal Slug, Cadillacs and Dinosaurs, Knights of Valour, Street Fighter, Captain Commando... Copy the game's zip file into `Games` and keep its file name. Neo Geo games also need `neogeo.zip` and PGM games need `pgm.zip` in the `BIOS` folder. Details under [Supported consoles](#supported-consoles).
+
 ### What about `.7z` or `.rar` files?
 
-They show up under **Not recognized** with instructions: extract them, then copy the game into `Games`. A `.zip` holding a cartridge game (NES, SNES, Game Boy, GBA, Mega Drive...) plays as is, no need to extract it.
+They show up under **Not recognized** with instructions: extract them, then copy the game into `Games`. A `.zip` holding a cartridge game (NES, SNES, Game Boy, GBA, Mega Drive...) plays as is, no need to extract it. Arcade games stay as `.zip` / `.7z` files: do not extract them.
 
 ### Can I bring my saves from ePSXe, DuckStation or RetroArch?
 
@@ -161,7 +177,7 @@ PS1 memory card saves can be reused: see **Using an existing PS1 memory card sav
 
 ### Will it run on an old or slow computer?
 
-Games for the older consoles (NES, SNES, Game Boy, GBA, Mega Drive) and PS1 are very light. PS2 is much more demanding: a 4-core CPU and a dedicated or recent built-in graphics chip are recommended.
+Games for the older consoles (NES, SNES, Game Boy, GBA, Mega Drive), most arcade games and PS1 are very light. PS2 is much more demanding: a 4-core CPU and a dedicated or recent built-in graphics chip are recommended.
 
 ### How is it different from RetroArch?
 
@@ -190,12 +206,15 @@ To use a separate data folder while testing, set the `GAMECENTER_DATA_DIR` envir
 | `tools/package-linux.sh`, `tools/package-macos.sh` | AppImage (Linux) and .dmg (macOS) packaging |
 | `.github/workflows/release.yml` | Tests on 3 OSes; pushing a `v*` tag builds packages and drafts a Release |
 | `tools/fetch-retroarch.ps1` | Downloads RetroArch, cores and their licenses into the publish folder |
+| `src/GameCenter.Core/Arcade` | FinalBurn Neo arcade game list (`fbneo.dat.gz`), ROM set / BIOS / parent checks |
+| `tools/update-fbneo-dat.ps1` | Rebuilds the arcade game list from FinalBurn Neo's DAT files |
 
 Release:
 
 ```
 ./build.ps1                                                   # test + self-contained publish (bundles .NET 8)
 ./tools/fetch-retroarch.ps1 -Version 1.22.2                   # RetroArch + cores + licenses
+./tools/update-fbneo-dat.ps1                                   # arcade game list matching the FBNeo core just downloaded
 ./tools/e2e-test.ps1 -AppDir ./publish/GameCenter             # tests with the real RetroArch (saves, multi-disc)
 & "C:\Program Files\Inno Setup 7\ISCC.exe" installer\GameCenter.iss
 ```
@@ -213,7 +232,7 @@ Detailed design (Vietnamese): [GAME_CENTER_IMPLEMENTATION.md](GAME_CENTER_IMPLEM
 
 ## License
 
-Game Center is free, with no ads and no paid features. RetroArch and each core keep their own licenses (see `Licenses/`). Snes9x and Genesis Plus GX only allow non-commercial distribution. Game Center is not an official product of Sony, Nintendo or Sega. No games or BIOS files are included.
+Game Center is free, with no ads and no paid features. RetroArch and each core keep their own licenses (see `Licenses/`). Snes9x, Genesis Plus GX and FinalBurn Neo only allow non-commercial distribution. Game Center is not an official product of Sony, Nintendo, Sega, SNK, Capcom or any other game company. No games or BIOS files are included.
 
 ---
 
