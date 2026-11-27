@@ -52,7 +52,10 @@ public class RetroArchE2ETests
         File.WriteAllText(testCfg,
             "audio_enable = \"false\"\n" +
             "video_vsync = \"false\"\n" +          // chạy không chờ màn hình: đủ số khung hình nhanh kể cả khi cửa sổ bị che
-            "video_window_save_positions = \"false\"\n" + extraCfg);
+            "video_window_save_positions = \"false\"\n" +
+            // Máy không có card đồ họa (CI): chọn driver hình chạy được, ví dụ d3d11 (Windows dùng WARP)
+            (Environment.GetEnvironmentVariable("GAMECENTER_E2E_VIDEO_DRIVER") is { Length: > 0 } video ? $"video_driver = \"{video}\"\n" : "") +
+            extraCfg);
         var log = Path.Combine(paths.LogsDir, $"retroarch-{Guid.NewGuid():N}.log");
         // Ghép cấu hình test bằng đúng hàm app dùng (gộp với --appendconfig "Chơi tiếp" / thư mục save riêng nếu có)
         EmulatorLauncher.AddAppendConfigs(psi, new[] { testCfg });
