@@ -1,6 +1,8 @@
 # Build Game Center cho Windows, Linux và macOS.
 # - Mỗi lần push / pull request: chạy kiểm thử trên cả 3 hệ điều hành.
 # - Khi push tag "v*" (ví dụ v0.2.0): đóng gói 3 hệ và tạo bản nháp GitHub Release.
+# - Chạy tay (Actions → build → Run workflow): đóng gói 3 hệ để thử trước khi gắn tag, không tạo Release
+#   (bộ cài nằm ở mục Artifacts của lần chạy).
 name: build
 
 on:
@@ -29,7 +31,7 @@ jobs:
       - run: dotnet build src/GameCenter.Desktop -c Release
 
   windows:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     needs: test
     runs-on: windows-latest
     steps:
@@ -51,7 +53,7 @@ jobs:
         with: { name: windows, path: publish/GameCenter-Setup-*.exe }
 
   linux:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -64,7 +66,7 @@ jobs:
         with: { name: linux, path: publish/linux/*.AppImage }
 
   macos:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     needs: test
     runs-on: macos-latest
     strategy:
@@ -82,6 +84,7 @@ jobs:
 
   release:
     needs: [windows, linux, macos]
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
