@@ -118,7 +118,7 @@ Trạng thái bản 0.3.0. ✅ đã kiểm tra tự động (ghi rõ bằng gì)
 | Mục | Trạng thái |
 |---|---|
 | Nâng cấp từ 0.2.0: game cũ, yêu thích, lịch sử chơi còn nguyên; mở game đã có save → load được save trong game | ✅ bản sao dữ liệu 0.2.0 thật (4 game PS1 `.cue` và `.bin` lẻ, 7 file save, chạy bằng RetroArch thật; mục 4.2) · ⏳ chưa có SNES, `EBOOT.PBP` thật |
-| Game nhiều đĩa (The Legend of Dragoon 4 đĩa, bản Việt hóa chia thư mục): save đĩa 1 → đổi đĩa → đĩa 2 thấy save; thoát ở đĩa 2 → mở lại vào đĩa 2 | ✅ cơ chế với đĩa giả và RetroArch thật (4.2) · ⏳ game thật |
+| Game nhiều đĩa (The Legend of Dragoon 4 đĩa, bản Việt hóa chia thư mục): save đĩa 1 → đổi đĩa → đĩa 2 thấy save; thoát ở đĩa 2 → mở lại vào đĩa 2; đĩa khác tên ghép bằng "⋯ → Ghép thêm đĩa" | ✅ cơ chế với đĩa giả và RetroArch thật (4.2), ghép tay (M6, kiểm thử + giao diện thật) · ⏳ game thật |
 | Save trong game → "Không lưu" chỗ đang chơi → "Chơi tiếp" → thấy save mới nhất | ✅ máy băng và PS1 với RetroArch thật (4.2) · ⏳ thao tác trong game thật |
 | Tắt RetroArch bằng Task Manager giữa game (sau khi save trong game > 10 giây) → save còn | ⏳ |
 | "⋯ → Khôi phục save cũ", đổi ý khôi phục lại bản vừa thay | ✅ kiểm thử đơn vị (kể cả hai lần sao lưu cùng phần nghìn giây, C10) · ⏳ qua giao diện |
