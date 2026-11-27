@@ -333,6 +333,146 @@ public class RetroArchE2ETests
     }
 
     /// <summary>
+    /// Nâng cấp trên bản sao dữ liệu thật của bản cũ (checklist 4.3, mục đầu):
+    ///   $env:GAMECENTER_E2E_UPGRADE_FROM = "$env:USERPROFILE\GameCenter"   (thư mục dữ liệu của bản cũ)
+    /// Chép sang thư mục tạm có dấu tiếng Việt, đổi đường dẫn trong database và trong .cue / .m3u tự sinh sang chỗ mới
+    /// (như khi nâng cấp tại chỗ), rồi mở bằng bản mới. Bản gốc không bị đụng tới.
+    /// - Mọi game còn nguyên: id, hệ máy, file chạy (tên save), yêu thích, số lần chơi, lần chơi cuối; không có bản trùng.
+    /// - Quét và chuẩn bị chơi không làm mất nội dung save / chỗ đang chơi nào: mỗi file cũ còn nguyên chỗ cũ,
+    ///   hoặc (nếu được thay bằng save mới hơn của tên cũ) nằm trong bản sao lưu.
+    /// - Có GAMECENTER_E2E_APPDIR: chạy từng game có save bằng RetroArch thật → RetroArch nạp đúng file save, save còn nguyên;
+    ///   game có chỗ đang chơi thì "Chơi tiếp" nạp được.
+    /// </summary>
+    [Fact]
+    public void E2E_UpgradeFromExistingDataCopy()
+    {
+        var from = Environment.GetEnvironmentVariable("GAMECENTER_E2E_UPGRADE_FROM");
+        if (string.IsNullOrWhiteSpace(from) || !File.Exists(Path.Combine(from, "Database", "games.db")))
+        {
+            _out.WriteLine("Bỏ qua: chưa đặt GAMECENTER_E2E_UPGRADE_FROM");
+            return;
+        }
+        from = Path.GetFullPath(from).TrimEnd(Path.DirectorySeparatorChar);
+        using var env = new TestEnv();
+        var copy = Path.Combine(Path.GetDirectoryName(env.Root)!, "Bản sao dữ liệu");
+
+        // 1. Chép (trừ Logs), đổi đường dẫn tuyệt đối sang chỗ mới
+        foreach (var f in Directory.EnumerateFiles(from, "*", SearchOption.AllDirectories))
+        {
+            var rel = Path.GetRelativePath(from, f);
+            if (rel.StartsWith("Logs" + Path.DirectorySeparatorChar)) continue;
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(copy, rel))!);
+            File.Copy(f, Path.Combine(copy, rel));
+        }
+        var dbFile = Path.Combine(copy, "Database", "games.db");
+        using (var c = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbFile};Pooling=False"))
+        {
+            c.Open();
+            using var cmd = c.CreateCommand();
+            cmd.CommandText = """
+                UPDATE games SET launch_file = replace(launch_file, $a, $b), source_file = replace(source_file, $a, $b),
+                    folder_path = replace(folder_path, $a, $b), cover_path = replace(cover_path, $a, $b);
+                UPDATE discs SET file_path = replace(file_path, $a, $b);
+                """;
+            cmd.Parameters.AddWithValue("$a", from);
+            cmd.Parameters.AddWithValue("$b", copy);
+            cmd.ExecuteNonQuery();
+        }
+        foreach (var f in Directory.EnumerateFiles(Path.Combine(copy, "Playlists"), "*", SearchOption.AllDirectories)
+                     .Where(f => Path.GetExtension(f) is ".cue" or ".m3u"))
+            File.WriteAllText(f, File.ReadAllText(f).Replace(from, copy), new UTF8Encoding(false));
+
+        // 2. Trạng thái trước khi mở bằng bản mới
+        var before = new List<(long Id, string Platform, string Launch, bool Fav, long Plays, string? Last, string Status)>();
+        using (var c = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbFile};Pooling=False"))
+        {
+            c.Open();
+            using var cmd = c.CreateCommand();
+            cmd.CommandText = "SELECT id, platform, launch_file, is_favorite, play_count, last_played_at, scan_status FROM games";
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+                before.Add((r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetInt64(3) != 0, r.GetInt64(4), r.IsDBNull(5) ? null : r.GetString(5), r.GetString(6)));
+        }
+        static string Hash(string f) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(f)));
+        var saveDirs = new[] { "Saves", "States", Path.Combine("BIOS", "pcsx2", "memcards") }.Select(d => Path.Combine(copy, d)).Where(Directory.Exists).ToList();
+        var saves = saveDirs.SelectMany(d => Directory.EnumerateFiles(d, "*", SearchOption.AllDirectories))
+            .ToDictionary(f => f, Hash);
+        _out.WriteLine($"Bản cũ: {before.Count} game, {saves.Count} file save / chỗ đang chơi");
+
+        // 3. Mở bằng bản mới: tạo bảng mới, quét lại
+        var paths = new AppPaths(AppDir() ?? env.Paths.AppDir, copy);
+        paths.EnsureDataFolders();
+        var db = new GameDatabase(paths.DatabaseFile);
+        db.Initialize(env.Catalog);
+        var scanner = new GameScanner(env.Catalog, paths.GamesDir, paths.PlaylistsDir, paths.BiosDir);
+        _out.WriteLine("Quét: " + db.ApplyScan(scanner.Scan()));
+        var after = db.GetGames(includeMissing: true).ToDictionary(g => g.Id);
+        foreach (var b in before.Where(b => b.Status != ScanStatus.Missing))
+        {
+            var a = after[b.Id];
+            _out.WriteLine($"  #{a.Id} {a.Name} [{a.Platform}] chơi {a.PlayCount} lần → {Path.GetFileName(a.LaunchFile)}");
+            Assert.NotEqual(ScanStatus.Missing, a.ScanStatus);
+            if (b.Platform != GameDatabase.UnknownPlatform) Assert.Equal(b.Platform, a.Platform);
+            Assert.Equal(b.Launch, a.LaunchFile);                 // file chạy không đổi → tên save không đổi
+            Assert.Equal(b.Fav, a.IsFavorite);
+            Assert.Equal(b.Plays, a.PlayCount);
+            Assert.Equal(b.Last, a.LastPlayedAt);
+        }
+        foreach (var added in after.Values.Where(a => before.All(b => b.Id != a.Id)))
+            _out.WriteLine($"  + mới nhận ra: {added.Name} [{added.Platform}] {added.ScanMessage}");
+
+        // 4. Chuẩn bị chơi từng game (nhận lại save tên cũ, sao lưu): không mất nội dung save nào
+        var guard = new SaveGuard(paths);
+        var all = db.GetGames(includeMissing: true);
+        var playable = db.GetGames().Where(g => g.Platform != GameDatabase.UnknownPlatform).ToList();
+        var locs = playable.ToDictionary(g => g.Id, g => guard.Locate(g, all, env.Catalog));
+        foreach (var g in playable) guard.PrepareForLaunch(db, g, locs[g.Id]);
+        var backups = Directory.Exists(guard.AutoBackupsDir)
+            ? Directory.EnumerateFiles(guard.AutoBackupsDir, "*", SearchOption.AllDirectories).Select(Hash).ToHashSet()
+            : new HashSet<string>();
+        foreach (var (file, hash) in saves)
+        {
+            bool same = File.Exists(file) && Hash(file) == hash;
+            if (!same) _out.WriteLine($"  ~ đã thay (bản cũ trong sao lưu: {backups.Contains(hash)}): {Path.GetRelativePath(copy, file)}");
+            Assert.True(same || backups.Contains(hash), $"Mất nội dung save: {file}");
+        }
+        foreach (var f in saveDirs.SelectMany(d => Directory.EnumerateFiles(d, "*", SearchOption.AllDirectories)).Where(f => !saves.ContainsKey(f)))
+            _out.WriteLine($"  + nhận lại: {Path.GetRelativePath(copy, f)}");
+
+        // 5. Chạy thật bằng RetroArch (nếu có): mỗi game có save nạp đúng file save, save còn nguyên
+        if (AppDir() == null || !File.Exists(paths.RetroArchExe)) { _out.WriteLine("Không chạy RetroArch: chưa đặt GAMECENTER_E2E_APPDIR"); return; }
+        RetroArchConfig.Write(paths, Settings);
+        var launcher = new EmulatorLauncher(paths, env.Catalog, Settings);
+        foreach (var g in playable.Take(6))
+        {
+            var loc = locs[g.Id];
+            var srm = guard.FindSaveFiles(loc.ContentName, loc.SavesDir).FirstOrDefault(f => Path.GetExtension(f) == ".srm");
+            if (srm == null) continue;
+            var plan = launcher.Plan(g);
+            Assert.Equal(LaunchProblem.None, plan.Problem);
+            var cfgs = new List<string>();
+            if (SaveGuard.AppendConfig(loc) is { } perGame)
+            {
+                cfgs.Add(Path.Combine(paths.ConfigDir, "save-dir.cfg"));
+                File.WriteAllText(cfgs[^1], perGame);
+            }
+            bool hasState = new SaveStateService(loc.StatesDir).FindAutoState(g.LaunchFile) != null;
+            if (hasState)
+            {
+                cfgs.Add(Path.Combine(paths.ConfigDir, "resume.cfg"));
+                File.WriteAllText(cfgs[^1], "savestate_auto_load = \"true\"\n");
+            }
+            EmulatorLauncher.AddAppendConfigs(plan.StartInfo!, cfgs);
+            var srmHash = Hash(srm);
+            var log = Launch(paths, plan.StartInfo!, "savestate_auto_save = \"false\"\n");
+            Assert.Contains(srm, log);                              // RetroArch nạp đúng file save
+            Assert.Equal(srmHash, Hash(srm));                        // save còn nguyên sau khi thoát
+            if (hasState) Assert.Matches(@"\[State\][^\n]*(state\.auto)", log);
+            _out.WriteLine($"  ▶ {g.Name}: nạp {Path.GetFileName(srm)}{(hasState ? " + chỗ đang chơi" : "")}, save giữ nguyên");
+        }
+    }
+
+    /// <summary>
     /// Game thùng với core FinalBurn Neo thật: RetroArch đưa nguyên file zip cho core (không giải nén), và FBNeo tìm
     /// BIOS / bộ gốc ở đúng các chỗ Game Center kiểm tra trước khi chạy (cạnh file game, BIOS/fbneo, BIOS).
     /// Không có ROM thật nên dùng ROM giả: FBNeo vẫn mở game và báo thiếu ROM trên màn hình, đủ để xem nó tìm file ở đâu.

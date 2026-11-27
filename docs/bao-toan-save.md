@@ -29,6 +29,7 @@ Ký hiệu: ✅ đã có từ trước · 🆕 làm trong 0.3.0 · 🧪 có ki�
 | A4 | Giải nén `.zip` thành file ROM, đổi `.cue` sang `.chd` | Như A3 | 🆕 |
 | A5 | Bản Game Center mới đổi quy tắc đặt tên (chính bản 0.3.0: ghép đĩa rời, ghép đĩa theo thư mục) | Như A1; game đã chơi ở bản cũ chưa có lịch sử tên vẫn tìm qua tên file gốc và tên từng đĩa | 🆕 🧪 |
 | A6 | "Chỗ đang chơi" (`.state.auto`) cũng theo tên | Nhận lại state cũ như A1 | 🆕 🧪 |
+| A8 | Nâng cấp từ bản 0.1.0: bản đó đặt tên `.cue` / `.m3u` tự sinh theo **tên game** (`Yu-Gi-Oh! Forbidden Memories.cue`), các bản sau theo tên file (`... (USA).cue`). Người chơi xen kẽ hai bản → tên hiện tại có save **cũ hơn**, save mới nhất nằm ở tên game (gặp trong dữ liệu thật) | Tên game được tính là tên cũ có thể có. Lần chơi đầu sau nâng cấp (game chưa có lịch sử tên save): nếu một tên cũ có save mới hơn → sao lưu save hiện tại rồi dùng bản mới hơn. Các lần sau save đang dùng không bao giờ bị thay. Tên đang là tên save của **game khác** không bao giờ được lấy | 🆕 🧪 |
 | A7 | Đổi thư mục dữ liệu trong Cài đặt → thư mục mới trống | Tự chép Saves, States, BIOS, Backups sang (không ghi đè, không xóa thư mục cũ) | 🆕 🧪 |
 
 Chỉ nhận lại save cho game **đã từng chơi** (số lần chơi > 0 hoặc có lịch sử tên). Game mới thêm chưa có save nào, nên không bao giờ nhận nhầm save của game khác.
@@ -83,6 +84,7 @@ Chỉ nhận lại save cho game **đã từng chơi** (số lần chơi > 0 ho�
 
 ```
 ./tools/e2e-test.ps1 -AppDir C:\GameCenter
+./tools/e2e-test.ps1 -AppDir C:\GameCenter -UpgradeFrom $env:USERPROFILE\GameCenter   # thêm: thử nâng cấp trên bản sao dữ liệu thật
 ```
 
 Dùng RetroArch và core trong thư mục cài, ảnh đĩa PS1 và ROM Game Boy **tự tạo** (không cần game thật), đường dẫn có dấu tiếng Việt. Kết quả lần chạy với RetroArch 1.22.2, Beetle PSX HW 0.9.44.1, Gambatte:
@@ -97,6 +99,16 @@ Dùng RetroArch và core trong thư mục cài, ảnh đĩa PS1 và ROM Game Boy
 | PS1: "Chơi tiếp" không kéo thẻ nhớ về quá khứ (Beetle không ghi đè thẻ nhớ khi nạp state; vẫn bật chặn để phòng) | ✅ |
 | Hai game trùng tên file (PS1 `LOD.cue` bản Việt hóa và bản gốc; Game Boy `game.gb` ở hai thư mục): mỗi game giữ save và chỗ đang chơi riêng, RetroArch ghi đúng thư mục riêng, file game không đổi | ✅ |
 | Không ghi file nào vào thư mục cài đặt (trước đây RetroArch ghi thời gian chơi `.lrtl` vào `Emulators/RetroArch/playlists/logs`; thư mục save riêng chưa tạo thì state rơi vào `Emulators/RetroArch/states`) | ✅ đã sửa cả hai |
+
+**Nâng cấp trên bản sao dữ liệu thật** (`-UpgradeFrom`, test `E2E_UpgradeFromExistingDataCopy`): chép thư mục dữ liệu của bản cũ sang thư mục tạm có dấu tiếng Việt, đổi đường dẫn trong database và `.cue` tự sinh sang chỗ mới (như nâng cấp tại chỗ), mở bằng bản mới; bản gốc không bị đụng tới. Lần chạy 27/11/2026 với dữ liệu 0.2.0 thật (4 game PS1: 2 game `.cue`, 2 game `.bin` không có `.cue`; 7 file save và chỗ đang chơi):
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Quét lại: không thêm, không mất game nào; id, hệ máy, số lần chơi, lần chơi cuối, yêu thích giữ nguyên | ✅ 4/4 |
+| File chạy (tên save) không đổi, kể cả `.cue` tự sinh cho `.bin` lẻ (nội dung giống hệt bản 0.2.0) | ✅ |
+| Không mất nội dung save nào khi quét và chuẩn bị chơi | ✅ 7/7 |
+| Save đặt theo tên game của bản 0.1.0 (A8) được nhận lại và bản đang dùng được sao lưu | ✅ (hai bản có cùng nội dung, người chơi không mất tiến trình) |
+| Chạy thật từng game bằng RetroArch: nạp đúng thẻ nhớ, thẻ nhớ giữ nguyên sau khi thoát; game có chỗ đang chơi thì "Chơi tiếp" nạp được | ✅ 4/4 |
 
 ### 4.3. Thủ công — checklist bắt buộc trước khi phát hành
 

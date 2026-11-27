@@ -96,23 +96,44 @@ public sealed class SaveGuard
     }
 
     /// <summary>
-    /// Tên save hiện tại chưa có save chính (.srm) mà một tên cũ của game có → chép bản mới nhất sang
-    /// (cùng thư mục core, ở nơi lưu của game). Tìm ở nơi lưu của game; <paramref name="fromShared"/>: với game lưu riêng,
-    /// tìm cả chỗ chung (save của game từ bản cũ, trước khi được tách riêng). Không ghi đè, không xóa bản cũ.
-    /// Trả về các file đã chép.
+    /// Nhận lại save từ tên cũ của game (cùng thư mục core, ở nơi lưu của game):
+    /// - Tên hiện tại chưa có save chính (.srm): chép bản mới nhất của các tên cũ sang. <paramref name="fromShared"/>: với game
+    ///   lưu riêng, tìm cả chỗ chung (save của game từ bản cũ, trước khi được tách riêng).
+    /// - <paramref name="preferNewer"/> (lần chơi đầu sau khi nâng cấp từ bản chưa ghi lịch sử tên save): tên hiện tại đã có
+    ///   save nhưng một tên cũ (trong nơi lưu của game) có save mới hơn → lần chơi gần nhất dùng tên cũ (ví dụ bản 0.1.0 đặt
+    ///   tên .cue tự sinh theo tên game, bản sau theo tên file) → sao lưu save hiện tại rồi chép bản mới hơn đè lên.
+    ///   Bản bị thay vẫn khôi phục được ("Khôi phục save cũ"). Các lần sau save theo tên hiện tại không bao giờ bị thay.
+    /// Không xóa save nào. Trả về các file đã chép.
     /// </summary>
-    public IReadOnlyList<string> AdoptPreviousSave(SaveLocation loc, IEnumerable<string> previousNames, bool fromShared = true)
+    public IReadOnlyList<string> AdoptPreviousSave(SaveLocation loc, IEnumerable<string> previousNames, bool fromShared = true, bool preferNewer = false)
     {
-        if (FindSaveFiles(loc.ContentName, loc.SavesDir).Any(IsMainSave)) return Array.Empty<string>();
-        var roots = loc.PerGame && fromShared ? new[] { loc.SavesDir, _paths.SavesDir } : new[] { loc.SavesDir };
-        var best = previousNames.Append(loc.ContentName)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .SelectMany(n => roots.SelectMany(r => FindSaveFiles(n, r).Where(IsMainSave).Select(f => (Name: n, Root: r, File: f))))
-            .Where(x => !(x.Root == loc.SavesDir && string.Equals(x.Name, loc.ContentName, StringComparison.OrdinalIgnoreCase)))
-            .OrderByDescending(x => File.GetLastWriteTimeUtc(x.File))
-            .FirstOrDefault();
+        var names = previousNames.Append(loc.ContentName).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var current = FindSaveFiles(loc.ContentName, loc.SavesDir).Where(IsMainSave).ToList();
+        (string Name, string Root, string File) best;
+        if (current.Count == 0)
+        {
+            var roots = loc.PerGame && fromShared ? new[] { loc.SavesDir, _paths.SavesDir } : new[] { loc.SavesDir };
+            best = names
+                .SelectMany(n => roots.SelectMany(r => FindSaveFiles(n, r).Where(IsMainSave).Select(f => (Name: n, Root: r, File: f))))
+                .Where(x => !(x.Root == loc.SavesDir && string.Equals(x.Name, loc.ContentName, StringComparison.OrdinalIgnoreCase)))
+                .OrderByDescending(x => File.GetLastWriteTimeUtc(x.File))
+                .FirstOrDefault();
+        }
+        else if (preferNewer)
+        {
+            var currentTime = current.Max(File.GetLastWriteTimeUtc);
+            best = names
+                .Where(n => !string.Equals(n, loc.ContentName, StringComparison.OrdinalIgnoreCase))
+                .SelectMany(n => FindSaveFiles(n, loc.SavesDir).Where(IsMainSave).Select(f => (Name: n, Root: loc.SavesDir, File: f)))
+                .Where(x => File.GetLastWriteTimeUtc(x.File) > currentTime)
+                .OrderByDescending(x => File.GetLastWriteTimeUtc(x.File))
+                .FirstOrDefault();
+            if (best.File != null) Backup(loc, includePs2Cards: false, force: true);
+        }
+        else best = default;
         if (best.File == null) return Array.Empty<string>();
 
+        bool replace = current.Count > 0;
         var copied = new List<string>();
         var dir = Path.GetDirectoryName(best.File)!;
         var destDir = Path.Combine(loc.SavesDir, Path.GetRelativePath(best.Root, dir));
@@ -120,12 +141,12 @@ public sealed class SaveGuard
         foreach (var f in Directory.EnumerateFiles(dir).Where(f => Path.GetFileName(f).StartsWith(best.Name + ".", StringComparison.OrdinalIgnoreCase)))
         {
             var dest = Path.Combine(destDir, loc.ContentName + Path.GetFileName(f)[best.Name.Length..]);
-            if (File.Exists(dest)) continue;
+            if (File.Exists(dest) && !replace) continue;
             Directory.CreateDirectory(destDir);
-            File.Copy(f, dest);
+            File.Copy(f, dest, overwrite: replace);
             copied.Add(dest);
         }
-        Log.Info($"Nhận lại save \"{best.Name}\" cho \"{loc.BackupKey}\": {string.Join(", ", copied.Select(Path.GetFileName))}");
+        Log.Info($"Nhận lại save \"{best.Name}\" cho \"{loc.BackupKey}\"{(replace ? " (mới hơn save đang dùng, đã sao lưu bản cũ)" : "")}: {string.Join(", ", copied.Select(Path.GetFileName))}");
         return copied;
     }
 
@@ -272,9 +293,15 @@ public sealed class SaveGuard
             var history = db.GetSaveNames(game.Id);
             if (game.PlayCount > 0 || history.Count > 0)
             {
-                var old = history.Concat(PossibleOldNames(db, game)).ToList();
+                // Tên đang là tên save của game khác thì không phải tên cũ của game này: không lấy nhầm save của game khác
+                var taken = db.GetGames(includeMissing: true).Where(g => g.Id != game.Id)
+                    .Select(g => SaveStateService.ContentName(g.LaunchFile)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var old = history.Concat(PossibleOldNames(db, game))
+                    .Where(n => string.Equals(n, loc.ContentName, StringComparison.OrdinalIgnoreCase) || !taken.Contains(n))
+                    .ToList();
                 bool fromShared = history.Count == 0;
-                AdoptPreviousSave(loc, old, fromShared);
+                // Chưa có lịch sử tên save = lần đầu chơi sau khi nâng cấp từ bản cũ: save mới nhất trong các tên là save thật
+                AdoptPreviousSave(loc, old, fromShared, preferNewer: history.Count == 0);
                 AdoptPreviousState(loc, old, fromShared);
             }
             Backup(loc, includePs2Cards: game.Platform == "PS2");
@@ -284,7 +311,12 @@ public sealed class SaveGuard
     }
 
     /// <summary>Tên save game này có thể đã dùng trước khi có lịch sử: file gốc, file chạy, từng đĩa.</summary>
+    /// <summary>
+    /// Tên save game có thể đã dùng ở bản trước: tên file gốc, file chạy, các đĩa, và tên game
+    /// (bản 0.1.0 đặt tên .cue / .m3u tự sinh theo tên game đã làm sạch, ký tự không hợp lệ thay bằng "_").
+    /// </summary>
     private static IEnumerable<string> PossibleOldNames(GameDatabase db, GameRecord game) =>
         new[] { game.SourceFile, game.LaunchFile }.Concat(db.GetDiscs(game.Id))
-            .Select(SaveStateService.ContentName);
+            .Select(SaveStateService.ContentName)
+            .Append(string.Concat(game.Title.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)).Trim());
 }
