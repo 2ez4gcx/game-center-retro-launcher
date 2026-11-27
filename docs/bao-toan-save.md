@@ -111,21 +111,26 @@ Dùng RetroArch và core trong thư mục cài, ảnh đĩa PS1 và ROM Game Boy
 | Save đặt theo tên game của bản 0.1.0 (A8) được nhận lại và bản đang dùng được sao lưu | ✅ (hai bản có cùng nội dung, người chơi không mất tiến trình) |
 | Chạy thật từng game bằng RetroArch: nạp đúng thẻ nhớ, thẻ nhớ giữ nguyên sau khi thoát; game có chỗ đang chơi thì "Chơi tiếp" nạp được | ✅ 4/4 |
 
-### 4.3. Thủ công — checklist bắt buộc trước khi phát hành
+### 4.3. Checklist trước khi phát hành
 
-Làm trên **máy Windows sạch** và **máy đang dùng bản 0.2.0 có save thật**:
+Trạng thái bản 0.3.0. ✅ đã kiểm tra tự động (ghi rõ bằng gì), ⏳ còn phải làm tay trên máy thật.
 
-- [ ] Nâng cấp từ 0.2.0: game cũ, yêu thích, lịch sử chơi còn nguyên; mở 3 game đã có save (PS1 `.cue`, PS1 `EBOOT.PBP`, SNES) → load được save trong game.
-- [ ] Game nhiều đĩa thật (The Legend of Dragoon 4 đĩa, cả bản Việt hóa chia thư mục từng đĩa): save ở đĩa 1 → đổi đĩa qua menu → đĩa 2 load được save; thoát ở đĩa 2 → mở lại vào thẳng đĩa 2.
-- [ ] Save trong game → thoát chọn "Không lưu" chỗ đang chơi → "Chơi tiếp" → vào menu load của game thấy save mới nhất.
-- [ ] Rút điện / tắt RetroArch bằng Task Manager giữa game (sau khi save trong game > 10 giây) → save còn.
-- [ ] "⋯ → Khôi phục save cũ" đưa được save về bản trước; đổi ý khôi phục lại bản vừa thay.
-- [ ] Đổi thư mục dữ liệu sang ổ khác → mở lại → save có ở thư mục mới.
-- [ ] Gỡ cài đặt rồi cài lại → Saves, States, BIOS, Backups còn nguyên.
-- [ ] Đường dẫn cài và tên game có dấu tiếng Việt, có dấu cách.
-- [ ] PS2 (có BIOS thật): save thẻ nhớ ở game A, game B vẫn thấy thẻ nhớ; game PS2 nhiều đĩa đổi đĩa được.
-- [ ] Giao diện tiếng Anh và tiếng Việt: toàn bộ hộp thoại trên, menu RetroArch cùng ngôn ngữ.
-- [ ] macOS / Linux: ít nhất khởi động, quét, chơi một game PS1 và một game băng (chưa có máy thật để thử — ghi rõ trong ghi chú phát hành nếu chưa làm).
+| Mục | Trạng thái |
+|---|---|
+| Nâng cấp từ 0.2.0: game cũ, yêu thích, lịch sử chơi còn nguyên; mở game đã có save → load được save trong game | ✅ bản sao dữ liệu 0.2.0 thật (4 game PS1 `.cue` và `.bin` lẻ, 7 file save, chạy bằng RetroArch thật; mục 4.2) · ⏳ chưa có SNES, `EBOOT.PBP` thật |
+| Game nhiều đĩa (The Legend of Dragoon 4 đĩa, bản Việt hóa chia thư mục): save đĩa 1 → đổi đĩa → đĩa 2 thấy save; thoát ở đĩa 2 → mở lại vào đĩa 2 | ✅ cơ chế với đĩa giả và RetroArch thật (4.2) · ⏳ game thật |
+| Save trong game → "Không lưu" chỗ đang chơi → "Chơi tiếp" → thấy save mới nhất | ✅ máy băng và PS1 với RetroArch thật (4.2) · ⏳ thao tác trong game thật |
+| Tắt RetroArch bằng Task Manager giữa game (sau khi save trong game > 10 giây) → save còn | ⏳ |
+| "⋯ → Khôi phục save cũ", đổi ý khôi phục lại bản vừa thay | ✅ kiểm thử đơn vị (kể cả hai lần sao lưu cùng phần nghìn giây, C10) · ⏳ qua giao diện |
+| Đổi thư mục dữ liệu sang ổ khác → save có ở thư mục mới | ✅ kiểm thử đơn vị (A7) · ⏳ qua giao diện |
+| Gỡ cài đặt rồi cài lại → Saves, States, BIOS, Backups, Games còn nguyên | ✅ job `installer-test` trên máy Windows sạch |
+| Bộ cài tiếng Anh / tiếng Việt; Game Center mở đúng ngôn ngữ đã chọn khi cài | ✅ job `installer-test` |
+| Đường dẫn cài và dữ liệu có dấu tiếng Việt, dấu cách | ✅ `installer-test` (`Game Center thử`), kiểm thử đầu-cuối (`Dữ liệu game`), FBNeo |
+| Máy không có card đồ họa / driver Vulkan (máy ảo, Remote Desktop) | ✅ `installer-test` chạy kiểm thử đầu-cuối trên máy ảo không có card đồ họa; giả không có driver Vulkan (4.2) |
+| PS2 (BIOS thật): save thẻ nhớ ở game A, game B thấy thẻ nhớ; game nhiều đĩa đổi đĩa được | ⏳ chưa có BIOS PS2 |
+| Game thùng với ROM thật (Neo Geo có `neogeo.zip`, CPS1/CPS2, PGM): chơi được, bỏ xu, lưu chỗ đang chơi | ✅ core FBNeo thật nhận zip, tìm BIOS / bộ gốc đúng chỗ (4.2) · ⏳ ROM thật |
+| Giao diện tiếng Anh và tiếng Việt: hộp thoại, menu RetroArch cùng ngôn ngữ | ✅ màn hình chính, thiết lập phím (ảnh README) · ⏳ các hộp thoại còn lại |
+| macOS / Linux: khởi động, quét, chơi một game PS1 và một game băng | ✅ đóng gói trên CI · ⏳ chưa có máy thật (đã ghi trong ghi chú phát hành) |
 
 ## 5. Đề xuất tiếp theo
 
