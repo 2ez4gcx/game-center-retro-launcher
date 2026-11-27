@@ -13,7 +13,7 @@
 Install → Next → Finish → Copy games → Play
 ```
 
-![Game Center main screen: a list of NES, SNES, Game Boy and PS1 games with large text and Play buttons](docs/anh/man-hinh-chinh.png)
+![Game Center main screen: a list of arcade, SNES, NES, PS1 and PS2 games with large text and Play buttons](docs/anh/main-screen-en.png)
 
 ## Features
 
@@ -108,6 +108,10 @@ Game Center **does not replace** RetroArch; it is a simple layer on top. RetroAr
 | START / SELECT | Enter / Space |
 
 Change keys with **Set up keys** (click a box, then press the new key).
+
+| Keyboard mode | Set up keys |
+|---|---|
+| ![Keyboard mode](docs/anh/keyboard-mode-en.png) | ![Set up keys](docs/anh/set-up-keys-en.png) |
 
 **Exiting a game:** press **START + SELECT** on the controller, or **Esc** on the keyboard, **twice in a row**. The first press only shows "Press again to quit...", so a single slip never ends your game. **F1** opens the emulator menu (changing discs…), **F2 / F4** quick save / load. The emulator menu uses the same language as Game Center.
 
@@ -219,7 +223,7 @@ Release:
 & "C:\Program Files\Inno Setup 7\ISCC.exe" installer\GameCenter.iss
 ```
 
-Before releasing: run `e2e-test.ps1` and go through the manual checklist in [docs/bao-toan-save.md](docs/bao-toan-save.md) (section 4.3).
+Before releasing: write the release notes `docs/phat-hanh/v<version>.md` (the release job uses them), do a packaging dry run (**Actions → build → Run workflow**: packages for 3 OSes and an installer test on a clean Windows machine), run `e2e-test.ps1` and go through the manual checklist in [docs/bao-toan-save.md](docs/bao-toan-save.md) (section 4.3).
 
 Linux / macOS (run on that OS, or let GitHub Actions build on tag push):
 
