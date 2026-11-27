@@ -101,10 +101,14 @@ class GameActivity : ComponentActivity() {
             if (parts.size == 2) android.system.Os.setenv(parts[0], parts[1], true)
         }
 
-        try { CoreHooks.giveJavaVm(core) } catch (e: Throwable) { Log.w(TAG, "Không chạy được CoreHooks", e) }
+        // Core cần xử lý riêng (Play!) chạy qua lớp bọc trong libgcplayer.so; core khác nạp thẳng
+        val useProxy = try { CoreHooks.prepare(core) } catch (e: Throwable) {
+            Log.w(TAG, "Không chạy được CoreHooks", e)
+            false
+        }
 
         val data = GLRetroViewData(this).apply {
-            coreFilePath = core
+            coreFilePath = if (useProxy) CoreHooks.proxyPath(applicationInfo.nativeLibraryDir) else core
             gameFilePath = game
             intent.getStringExtra(EXTRA_SYSTEM_DIR)?.let { systemDirectory = it }
             intent.getStringExtra(EXTRA_SAVES_DIR)?.let { savesDirectory = it }

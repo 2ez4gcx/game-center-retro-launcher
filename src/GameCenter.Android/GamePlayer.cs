@@ -41,7 +41,10 @@ public sealed class GamePlayer
         guard.PrepareForLaunch(App.Db, game, saves);
 
         // Chỗ đang chơi (save state): hỏi chơi tiếp hay chơi từ đầu, như bản máy tính
-        bool useStates = App.Settings.AskSaveStateOnExit;
+        // Play! (PS2) tự ghi thẻ nhớ vào thư mục Saves, không có .srm; và nó chụp "chỗ đang chơi" trong lúc luồng giả lập
+        // vẫn chạy nên nạp lại có thể treo game. Với core này chỉ dùng save trong game (thẻ nhớ).
+        bool ownSaves = IsPlay(plan.CorePath!);
+        bool useStates = App.Settings.AskSaveStateOnExit && !ownSaves;
         var states = new SaveStateService(saves.StatesDir);
         var stateFile = states.FindAutoState(game.LaunchFile)
                         ?? Path.Combine(saves.StatesDir, saves.ContentName + SaveStateService.AutoSuffix);
@@ -49,9 +52,10 @@ public sealed class GamePlayer
         if (useStates && File.Exists(stateFile))
             resume = await Confirm(game.Name, Loc.T("play.resume_text"), Loc.T("play.resume_yes"), Loc.T("play.resume_no"), true);
 
-        var sramFile = guard.FindSaveFiles(saves.ContentName, saves.SavesDir)
-                           .FirstOrDefault(f => f.EndsWith(".srm", StringComparison.OrdinalIgnoreCase))
-                       ?? Path.Combine(saves.SavesDir, saves.ContentName + ".srm");
+        var sramFile = ownSaves ? null
+            : guard.FindSaveFiles(saves.ContentName, saves.SavesDir)
+                  .FirstOrDefault(f => f.EndsWith(".srm", StringComparison.OrdinalIgnoreCase))
+              ?? Path.Combine(saves.SavesDir, saves.ContentName + ".srm");
 
         var intent = new Intent();
         intent.SetClassName(activity, PlayerActivity);
@@ -59,8 +63,8 @@ public sealed class GamePlayer
         intent.PutExtra("game", PrepareContent(game, plan.LaunchFile!));
         intent.PutExtra("systemDir", paths.BiosDir);
         intent.PutExtra("savesDir", saves.SavesDir);
-        intent.PutExtra("sramFile", sramFile);
-        intent.PutExtra("stateFile", stateFile);
+        if (sramFile != null) intent.PutExtra("sramFile", sramFile);
+        if (useStates) intent.PutExtra("stateFile", stateFile);
         intent.PutExtra("loadState", resume);
         intent.PutExtra("saveStateOnExit", useStates);
         intent.PutExtra("variables", CoreVariables());
@@ -107,9 +111,10 @@ public sealed class GamePlayer
     /// mặc định là gốc bộ nhớ chung (app không có quyền ghi, core sẽ sập): trỏ về thư mục Saves của Game Center.
     /// </summary>
     private static string[] CoreEnvironment(string corePath, string savesDir) =>
-        Path.GetFileName(corePath).Contains("play_libretro", StringComparison.OrdinalIgnoreCase)
-            ? new[] { "EXTERNAL_STORAGE=" + savesDir }
-            : Array.Empty<string>();
+        IsPlay(corePath) ? new[] { "EXTERNAL_STORAGE=" + savesDir } : Array.Empty<string>();
+
+    private static bool IsPlay(string corePath) =>
+        Path.GetFileName(corePath).Contains("play_libretro", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Tùy chọn core do Game Center quản lý (phần áp dụng được trên Android).</summary>
     private static string[] CoreVariables() => new[]
