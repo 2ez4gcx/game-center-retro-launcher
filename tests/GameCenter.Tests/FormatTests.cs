@@ -409,6 +409,50 @@ public class MultiDiscLayoutTests
         Assert.Contains("(Disc 4) (VN)", lines[3]);
     }
 
+    /// <summary>
+    /// Ghép tay (M6): đĩa 1 bản Việt hóa "LOD (VN).cue" và đĩa 2–4 bản gốc khác tên → không tự ghép được;
+    /// người chơi ghép đĩa 1 với bộ bản gốc → một game 4 đĩa, playlist theo tên đĩa 1 (save của đĩa 1 dùng tiếp).
+    /// Lịch sử chơi giữ ở game đĩa 1; tách ra thì trở lại như cũ.
+    /// </summary>
+    [Fact]
+    public void ManualMerge_TranslatedDisc1_WithOriginalDiscs()
+    {
+        using var env = new TestEnv();
+        Disc(env, "PS1/LOD Viet hoa", "LOD (VN)");
+        for (int n = 2; n <= 4; n++) Disc(env, "PS1/LOD goc", $"Legend of Dragoon, The (USA) (Disc {n})");
+        var db = new GameDatabase(env.Paths.DatabaseFile);
+        db.Initialize(env.Catalog);
+        db.ApplyScan(env.Scan());
+        Assert.Equal(2, db.GetGames().Count);                              // khác tên: không tự ghép
+        var vn = db.GetGames().Single(g => g.SourceFile.EndsWith("LOD (VN).cue"));
+        var usa = db.GetGames().Single(g => g.DiscCount == 3);
+        db.MarkPlayed(vn.Id);
+
+        var groups = DiscGroups.Load(env.Paths);
+        groups.Append(vn.SourceFile, usa.SourceFile);
+        groups.Save();
+        Assert.Contains("PS1/LOD Viet hoa/LOD (VN).cue", File.ReadAllText(DiscGroups.FileOf(env.Paths)));   // lưu tương đối
+        List<ScannedGame> Scan() =>
+            new GameScanner(env.Catalog, env.Paths.GamesDir, env.Paths.PlaylistsDir) { ManualDiscGroups = DiscGroups.Load(env.Paths).Groups }.Scan();
+
+        db.ApplyScan(Scan());
+        var g = Assert.Single(db.GetGames());
+        Assert.Equal(vn.Id, g.Id);
+        Assert.Equal(1, g.PlayCount);
+        Assert.Equal(4, g.DiscCount);
+        Assert.Equal("LOD (VN).m3u", Path.GetFileName(g.LaunchFile));
+        var lines = File.ReadAllLines(g.LaunchFile);
+        Assert.EndsWith("LOD (VN).cue", lines[0]);
+        Assert.EndsWith("(Disc 4).cue", lines[3]);
+
+        // Tách: hai game như trước, game bản gốc hiện lại
+        Assert.True(groups.Split(vn.SourceFile));
+        groups.Save();
+        db.ApplyScan(Scan());
+        Assert.Equal(2, db.GetGames().Count);
+        Assert.Null(DiscGroups.Load(env.Paths).GroupOf(vn.SourceFile));
+    }
+
     [Fact]
     public void GameFolder_WithDiscSubfolders()
     {

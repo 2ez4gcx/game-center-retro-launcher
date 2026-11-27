@@ -278,7 +278,10 @@ public partial class MainWindow : Window
         if (!silent) IsEnabled = false;
         try
         {
-            var scanner = new GameScanner(App.Catalog, App.Paths.GamesDir, App.Paths.PlaylistsDir, App.Paths.BiosDir);
+            var scanner = new GameScanner(App.Catalog, App.Paths.GamesDir, App.Paths.PlaylistsDir, App.Paths.BiosDir)
+            {
+                ManualDiscGroups = DiscGroups.Load(App.Paths).Groups,
+            };
             var summary = await Task.Run(() => App.Db.ApplyScan(scanner.Scan()));
             Log.Info($"Quét xong: {summary}");
             ImportBios(scanner.BiosFiles);
@@ -497,8 +500,50 @@ public partial class MainWindow : Window
             (Loc.T(item.Record.IsFavorite ? "more.unfavorite" : "more.favorite"), () => { ToggleFavorite(item); return Task.CompletedTask; }),
             (Loc.T("more.restore_save"), () => RestoreSave(item)),
         };
+        if (App.Catalog.IsDiscPlatform(item.Record.Platform))
+        {
+            options.Add((Loc.T("more.merge_discs"), () => MergeDiscs(item)));
+            if (DiscGroups.Load(App.Paths).GroupOf(item.Record.SourceFile) != null)
+                options.Add((Loc.T("more.split_discs"), () => SplitDiscs(item)));
+        }
         int i = await Dialogs.Choose(this, item.Name, null, options.Select(o => o.Label).ToList());
         if (i >= 0) await options[i].Run();
+    }
+
+    /// <summary>
+    /// Ghép thêm đĩa khi các đĩa khác tên nên không tự ghép được (đĩa 1 bản Việt hóa, đĩa sau bản gốc...).
+    /// Chọn game kế tiếp (là bộ nhiều đĩa thì góp hết các đĩa), quét lại để thành một game nhiều đĩa.
+    /// </summary>
+    private async Task MergeDiscs(GameItem item)
+    {
+        var candidates = _all
+            .Where(g => g.Record.Id != item.Record.Id && g.Record.Platform == item.Record.Platform)
+            .OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+        if (candidates.Count == 0)
+        {
+            await Dialogs.Info(this, Loc.T("merge.title"), Loc.T("merge.none", item.PlatformName));
+            return;
+        }
+        string Label(GameItem g) => $"{g.Name}  ·  {Path.GetFileName(g.Record.SourceFile)}" +
+                                    (g.Record.DiscCount >= 2 ? $"  ·  {Loc.T("game.discs", g.Record.DiscCount)}" : "");
+        int i = await Dialogs.Choose(this, Loc.T("merge.title"),
+            Loc.T("merge.text", item.Name, Math.Max(1, item.Record.DiscCount) + 1), candidates.Select(Label).ToList());
+        if (i < 0) return;
+        var groups = DiscGroups.Load(App.Paths);
+        groups.Append(item.Record.SourceFile, candidates[i].Record.SourceFile);
+        groups.Save();
+        Log.Info($"Ghép đĩa: {item.Record.SourceFile} + {candidates[i].Record.SourceFile}");
+        await ScanAsync(silent: true);
+    }
+
+    private async Task SplitDiscs(GameItem item)
+    {
+        var groups = DiscGroups.Load(App.Paths);
+        if (!groups.Split(item.Record.SourceFile)) return;
+        groups.Save();
+        Log.Info($"Tách đĩa đã ghép: {item.Record.SourceFile}");
+        await ScanAsync(silent: true);
     }
 
     /// <summary>Khôi phục save từ các bản sao lưu tự động (tạo mỗi lần trước khi chơi).</summary>
