@@ -487,12 +487,11 @@ Nguồn tham khảo: trang Licenses của Libretro Docs (liệt kê các core ph
 
 ### 17.3. Donate
 
-Các giấy phép phi thương mại không nói rõ về việc nhận donate, nên đây là vùng chưa chắc chắn. Nếu nhận donate:
+**Không nhận donate**, không đặt mã ủng hộ (MoMo, chuyển khoản...) ở README, trang web, bộ cài hay trong app.
 
-- Phần mềm tải về hoàn toàn miễn phí, không khóa tính năng, không có bản riêng cho người donate.
-- Nút donate đặt ở trang web hoặc mục "Giới thiệu", không đặt trong bộ cài hay màn hình chơi game.
-- Ghi rõ donate là ủng hộ phần launcher Game Center, không phải trả tiền cho emulator.
-- Trước khi mở donate: hỏi trực tiếp tác giả Snes9x và Genesis Plus GX, lưu lại văn bản trả lời.
+- Từ bản 0.3.0, bộ cài kèm FinalBurn Neo (game thùng). Giấy phép FBNeo ghi rõ: *"You may not ask for donations to support your work on any project that uses the FB Neo source code."* (`Licenses/Core-LICENSES/fbneo.txt`).
+- Snes9x và Genesis Plus GX cũng là giấy phép phi thương mại, không nói rõ về donate.
+- Muốn nhận donate lại thì phải bỏ FBNeo khỏi bộ cài trước (người dùng tự tải core), và hỏi trực tiếp tác giả Snes9x, Genesis Plus GX, lưu lại văn bản trả lời.
 
 ### 17.4. Thư mục license
 
