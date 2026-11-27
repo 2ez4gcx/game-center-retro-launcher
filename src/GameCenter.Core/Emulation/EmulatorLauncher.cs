@@ -82,7 +82,32 @@ public sealed class EmulatorLauncher
         string? warning = null;
         if (platform.Name == ArcadeDatabase.Platform && CheckArcade(game.LaunchFile, out warning) is { } problem)
             return problem;
+        // Ổ chứa save sắp đầy: save trong game / chỗ đang chơi có thể không ghi được → hỏi trước
+        if (LowDiskWarning(_paths.SavesDir) is { } disk) warning = warning == null ? disk : warning + "\n\n" + disk;
         return new(LaunchProblem.None, "", BuildRetroArchStartInfo(core, game.LaunchFile), warning);
+    }
+
+    /// <summary>Dưới mức này thì cảnh báo: chỗ đang chơi của PS2 vài chục MB, thẻ nhớ PS2 8 MB, cộng bản sao lưu.</summary>
+    public const long LowDiskBytes = 300L * 1024 * 1024;
+
+    /// <summary>
+    /// Câu cảnh báo nếu ổ chứa <paramref name="dir"/> còn trống ít hơn <paramref name="threshold"/>, null nếu đủ hoặc không đọc được.
+    /// Ổ được chọn là điểm gắn (mount) dài nhất chứa thư mục (Linux / macOS có nhiều điểm gắn trên cùng "/").
+    /// </summary>
+    public static string? LowDiskWarning(string dir, long threshold = LowDiskBytes)
+    {
+        try
+        {
+            var full = Path.GetFullPath(dir);
+            var cmp = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            var drive = DriveInfo.GetDrives()
+                .Where(d => d.IsReady && full.StartsWith(d.RootDirectory.FullName, cmp))
+                .OrderByDescending(d => d.RootDirectory.FullName.Length)
+                .FirstOrDefault();
+            if (drive == null || drive.AvailableFreeSpace >= threshold) return null;
+            return Loc.T("launch.disk_low", $"{drive.AvailableFreeSpace / (1024 * 1024)} MB", drive.Name);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return null; }
     }
 
     /// <summary>

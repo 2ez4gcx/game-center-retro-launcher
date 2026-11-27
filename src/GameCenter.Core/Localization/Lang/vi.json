@@ -108,6 +108,7 @@
   "launch.duck_missing": "Không tìm thấy DuckStation bạn đã chọn. Hãy kiểm tra lại trong Cài đặt.",
   "launch.retroarch_missing": "Thiếu RetroArch trong thư mục cài đặt. Hãy cài lại Game Center.",
   "launch.core_missing": "Thiếu thành phần giả lập cho {0} ({1}). Hãy cài lại Game Center.",
+  "launch.disk_low": "Ổ đĩa chứa save ({1}) chỉ còn trống {0}. Save trong game và chỗ đang chơi có thể không ghi được.\n\nNên xóa bớt file trên ổ này trước khi chơi.",
   "launch.bios_missing": "Game này cần một file hệ thống BIOS. Hãy thêm BIOS mà bạn tự sao lưu hợp pháp vào thư mục BIOS, sau đó thử lại.",
   "launch.bios_missing.PS2": "Game PS2 cần BIOS của máy PS2.\n\nHãy sao lưu (dump) BIOS từ máy PS2 của bạn rồi chép vào thư mục BIOS (để thẳng trong thư mục BIOS là được), sau đó bấm Chơi lại. Tên file không quan trọng; file BIOS PS2 thường tên SCPH-xxxxx.bin và nặng 4 MB.\n\nGame Center không cung cấp và không tải BIOS.",
 

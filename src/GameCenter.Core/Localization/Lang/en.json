@@ -109,6 +109,7 @@
   "launch.duck_missing": "The DuckStation program you chose cannot be found. Please check it in Settings.",
   "launch.retroarch_missing": "RetroArch is missing from the installation folder. Please reinstall Game Center.",
   "launch.core_missing": "The emulator part for {0} ({1}) is missing. Please reinstall Game Center.",
+  "launch.disk_low": "The drive that holds your saves ({1}) only has {0} free. In-game saves and your place in the game may not be saved.\n\nIt is best to free up some space on this drive before playing.",
   "launch.bios_missing": "This game needs a system file called a BIOS. Please add a BIOS that you legally backed up yourself to the BIOS folder, then try again.",
   "launch.bios_missing.PS2": "PS2 games need the BIOS of a PS2 console.\n\nPlease back up (dump) the BIOS from your own PS2 and copy it into the BIOS folder (straight into the BIOS folder is fine), then click Play again. The file name does not matter; a PS2 BIOS file is usually called SCPH-xxxxx.bin and is 4 MB in size.\n\nGame Center does not provide or download BIOS files.",
 
