@@ -56,6 +56,7 @@ Chỉ nhận lại save cho game **đã từng chơi** (số lần chơi > 0 ho�
 | C7 | Dùng DuckStation tự cài cho PS1 | Save nằm trong thư mục của DuckStation, không dùng chung với Beetle | ✅ ghi rõ trong Cài đặt |
 | C8 | Ổ đầy / file bị khóa (đồng bộ đám mây, phần mềm diệt virus) | 💡 kiểm tra dung lượng trống trước khi chơi, báo nếu RetroArch không ghi được save (đọc log) | 💡 |
 | C9 | Sao lưu thủ công | "Cài đặt → Sao lưu dữ liệu" nén Saves, States và thẻ nhớ PS2 | ✅ / 🆕 thêm thẻ nhớ PS2 |
+| C10 | Hai lần sao lưu trong cùng một phần nghìn giây (máy nhanh; "Khôi phục" sao lưu bản hiện tại ngay trước khi chép) | Lỗi cũ: thư mục sao lưu đặt tên theo thời điểm nên bản sau đè bản trước, có thể khôi phục nhầm bản (CI macOS phát hiện). Nay bản mới luôn đặt sau bản mới nhất, không bao giờ ghi đè | ✅ 🧪 |
 
 ## 3. Game nhiều đĩa
 

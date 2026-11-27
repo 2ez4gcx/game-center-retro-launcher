@@ -33,8 +33,14 @@ public sealed class SaveGuard
     /// <summary>Thư mục con trong bản sao lưu chứa thẻ nhớ PS2 dùng chung (BIOS/pcsx2/memcards).</summary>
     private const string Ps2CardsFolder = "_PS2-memcards";
     private readonly AppPaths _paths;
+    private readonly Func<DateTime> _now;
 
-    public SaveGuard(AppPaths paths) => _paths = paths;
+    /// <param name="clock">Giờ hiện tại (kiểm thử truyền giờ cố định); mặc định <see cref="DateTime.Now"/>.</param>
+    public SaveGuard(AppPaths paths, Func<DateTime>? clock = null)
+    {
+        _paths = paths;
+        _now = clock ?? (() => DateTime.Now);
+    }
 
     public string AutoBackupsDir => Path.Combine(_paths.BackupsDir, "Auto");
     /// <summary>Thẻ nhớ dùng chung của LRPS2 (pcsx2_shared_memory_cards = enabled): &lt;system&gt;/pcsx2/memcards.</summary>
@@ -174,7 +180,14 @@ public sealed class SaveGuard
         var latest = ListBackups(loc).FirstOrDefault();
         if (!force && latest != null && SameContent(set, latest.Dir)) return null;
 
-        var dir = Path.Combine(BackupRoot(loc.BackupKey), DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff"));
+        // Tên thư mục là thời điểm sao lưu (dùng để sắp xếp). Hai lần sao lưu trong cùng một phần nghìn giây (máy nhanh,
+        // hoặc "Khôi phục" sao lưu bản hiện tại ngay trước khi chép) không được ghi đè bản trước: luôn đặt sau bản mới nhất,
+        // kể cả khi đồng hồ máy bị chỉnh lùi (bản mới không bị coi là cũ rồi bị xóa khi chỉ giữ KeepBackups bản).
+        var stamp = _now();
+        if (latest != null && stamp <= latest.Time) stamp = latest.Time.AddMilliseconds(1);
+        string dir;
+        while (Directory.Exists(dir = Path.Combine(BackupRoot(loc.BackupKey), stamp.ToString("yyyy-MM-dd_HH-mm-ss-fff"))))
+            stamp = stamp.AddMilliseconds(1);
         foreach (var (source, rel) in set)
         {
             var dest = Path.Combine(dir, rel);
