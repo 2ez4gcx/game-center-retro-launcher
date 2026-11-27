@@ -27,6 +27,19 @@ public class AndroidTests
     }
 
     [Fact]
+    public void Ps2_OnAndroid_UsesPlayCore_AndNeedsNoBios()
+    {
+        // Play! tự giả lập BIOS (mã nguồn mở), nên bản Android chơi PS2 không cần file BIOS của Sony
+        using var env = new TestEnv();
+        var ps2 = env.Catalog.Get("PS2")!;
+        Assert.True(ps2.Android);
+        Assert.Equal("play_libretro.dll", ps2.CoreFor(Os.Android));
+        Assert.False(ps2.BiosRequiredFor(Os.Android));
+        Assert.Equal("pcsx2_libretro.dll", ps2.CoreFor(Os.Windows));
+        Assert.True(ps2.BiosRequiredFor(Os.Windows));
+    }
+
+    [Fact]
     public void PlanEmbedded_NeedsOnlyTheCoreInTheAppLibraryFolder()
     {
         using var env = new TestEnv();

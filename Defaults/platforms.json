@@ -86,7 +86,6 @@
       "folders": ["PS2", "PlayStation2", "PlayStation 2"],
       "core": "pcsx2_libretro.dll",
       "androidCore": "play_libretro.dll",
-      "android": false,
       "extensions": [".iso", ".chd", ".cso", ".zso", ".cue", ".bin", ".img", ".mdf", ".nrg", ".m3u"],
       "disc": true,
       "enabled": true,
