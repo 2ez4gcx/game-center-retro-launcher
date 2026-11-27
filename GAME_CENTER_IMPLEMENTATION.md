@@ -356,6 +356,7 @@ Game Center sinh `retroarch.cfg` trong thư mục dữ liệu, gồm:
 - Phím Esc trên bàn phím để thoát.
 - Tắt các thông báo kỹ thuật không cần thiết trên màn hình.
 - Beetle PSX HW: renderer mặc định Vulkan; nếu máy không hỗ trợ Vulkan → software renderer. Không dùng OpenGL renderer làm mặc định vì có lỗi đồ họa.
+- "Hỗ trợ Vulkan" kiểm tra thật (`VulkanProbe`): có `VK_KHR_surface` + surface của hệ điều hành và có card đồ họa, không chỉ có file `vulkan-1.dll` (máy ảo, Remote Desktop, card cũ có file nhưng không có driver → RetroArch thoát "Cannot open video driver"). Không có Vulkan: Windows dùng Direct3D 11 (có trên mọi máy Windows 10/11), Linux OpenGL, macOS glcore.
 
 ### 10.3. DuckStation tùy chọn (không đóng gói)
 

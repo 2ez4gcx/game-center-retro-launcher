@@ -52,24 +52,22 @@ public static class OsPlatform
         _ => null,
     };
 
-    /// <summary>Máy có Vulkan không (macOS: không có Vulkan gốc → dùng renderer phần mềm).</summary>
-    public static bool IsVulkanAvailable(Os os)
-    {
-        try
-        {
-            return os switch
-            {
-                Os.Windows => File.Exists(Path.Combine(Environment.SystemDirectory, "vulkan-1.dll")),
-                Os.Linux => new[] { "/usr/lib", "/usr/lib64", "/usr/lib/x86_64-linux-gnu", "/usr/lib/aarch64-linux-gnu", "/lib/x86_64-linux-gnu" }
-                    .Any(d => File.Exists(Path.Combine(d, "libvulkan.so.1"))),
-                _ => false,
-            };
-        }
-        catch { return false; }
-    }
+    /// <summary>
+    /// Máy dùng được Vulkan không: có driver Vulkan thật, không chỉ có file bộ nạp (xem <see cref="VulkanProbe"/>).
+    /// macOS: không có Vulkan gốc → dùng renderer phần mềm.
+    /// </summary>
+    public static bool IsVulkanAvailable(Os os) => VulkanProbe.IsUsable(os);
 
-    /// <summary>Driver hình khi không dùng Vulkan.</summary>
-    public static string FallbackVideoDriver(Os os) => os == Os.MacOS ? "glcore" : "gl";
+    /// <summary>
+    /// Driver hình khi không dùng Vulkan. Windows: Direct3D 11, có trên mọi máy Windows 10/11 kể cả máy không có card
+    /// đồ họa (Windows tự vẽ bằng CPU); OpenGL thì máy ảo / Remote Desktop / driver mặc định của Windows không có đủ.
+    /// </summary>
+    public static string FallbackVideoDriver(Os os) => os switch
+    {
+        Os.Windows => "d3d11",
+        Os.MacOS => "glcore",
+        _ => "gl",
+    };
 
     /// <summary>Mở thư mục bằng trình quản lý file của hệ điều hành.</summary>
     public static void OpenFolder(string path)

@@ -44,10 +44,12 @@ public class RetroArchE2ETests
     private static string MarkerOf(string srm) => Encoding.ASCII.GetString(File.ReadAllBytes(srm), 0x2000, 32).Trim();
 
     /// <summary>Chạy RetroArch đúng lệnh Game Center tạo, thêm cấu hình test; chờ tự thoát. Trả về log.</summary>
-    private string Launch(AppPaths paths, ProcessStartInfo psi, string extraCfg = "")
+    /// <param name="vulkan">Kết quả kiểm tra Vulkan dùng để ghi cấu hình; null: kiểm tra trên máy này như Game Center.</param>
+    private string Launch(AppPaths paths, ProcessStartInfo psi, string extraCfg = "", bool? vulkan = null)
     {
         // Như Game Center: ghi lại cấu hình chuẩn trước mỗi lần chạy (RetroArch lưu cả giá trị --appendconfig khi thoát)
-        RetroArchConfig.Write(paths, Settings);
+        if (vulkan is { } v) RetroArchConfig.Write(paths, Settings, v);
+        else RetroArchConfig.Write(paths, Settings);
         var testCfg = Path.Combine(paths.ConfigDir, "e2e.cfg");
         File.WriteAllText(testCfg,
             "audio_enable = \"false\"\n" +
@@ -196,6 +198,37 @@ public class RetroArchE2ETests
         _out.WriteLine("block_sram_overwrite=false → thẻ nhớ sau khi chơi tiếp: " + ResumeWith(block: false));
         // Cấu hình Game Center hiện tại (chặn ghi đè): thẻ nhớ giữ bản mới nhất "B"
         Assert.Equal("B-SAVE-MOI-NHAT", ResumeWith(block: true));
+    }
+
+    /// <summary>
+    /// Máy không có driver Vulkan nhưng có file vulkan-1.dll (máy ảo, Remote Desktop, card cũ — máy Windows sạch của CI):
+    /// giả bằng cách trỏ bộ nạp Vulkan tới driver không tồn tại. Cấu hình cũ (thấy vulkan-1.dll là chọn Vulkan) làm
+    /// RetroArch thoát ngay "Cannot open video driver"; Game Center giờ kiểm tra Vulkan thật (VulkanProbe) → Direct3D 11
+    /// + Beetle phần mềm → game PS1 vẫn chạy.
+    /// </summary>
+    [Fact]
+    public void E2E_NoVulkanDriver_Ps1StillStarts()
+    {
+        if (AppDir() is not { } appDir) { _out.WriteLine("Bỏ qua: chưa đặt GAMECENTER_E2E_APPDIR"); return; }
+        if (!OperatingSystem.IsWindows()) return;
+        using var env = new TestEnv();
+        var (paths, _, game, launcher) = Setup(env, appDir);
+        ProcessStartInfo NoVulkan()
+        {
+            var psi = launcher.Plan(game).StartInfo!;
+            psi.Environment["VK_DRIVER_FILES"] = Path.Combine(env.Root, "khong-co-driver.json");
+            psi.Environment["VK_ICD_FILENAMES"] = Path.Combine(env.Root, "khong-co-driver.json");
+            return psi;
+        }
+
+        // Đối chứng: cấu hình cũ chọn Vulkan → RetroArch không mở được hình
+        var old = Launch(paths, NoVulkan(), vulkan: true);
+        _out.WriteLine("Cấu hình cũ: " + (old.Contains("Cannot open video driver") ? "không mở được hình (lỗi cũ tái hiện được)" : "vẫn chạy"));
+
+        var log = Launch(paths, NoVulkan(), vulkan: false);
+        Assert.DoesNotContain("Cannot open video driver", log);
+        Assert.Matches(@"\[Disc\][^\n]*1/2", log);                     // game PS1 đã chạy
+        Assert.Contains("d3d11", log, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>ROM Game Boy giả có pin lưu (MBC1 + RAM 8 KB + pin) để core tạo SRAM (.srm).</summary>
