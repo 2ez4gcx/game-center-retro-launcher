@@ -273,11 +273,12 @@
   "android.menu_exit": "Thoát game",
   "android.disc_n": "Đĩa {0}",
   "android.help_play": "1. Cắm máy vào máy tính bằng cáp USB rồi chép game vào thư mục:\n{0}\nĐể chung một chỗ cũng được, Game Center tự nhận ra hệ máy.\n2. Mở Game Center và bấm \"Quét\".\n3. Chạm vào game để chơi.",
-  "android.help_exit": "Để tránh lỡ tay, phải bấm 2 lần mới thoát:\n• Bấm nút Quay lại của máy 2 lần, hoặc\n• Tay cầm: bấm cùng lúc START và SELECT, 2 lần, hoặc\n• Bấm nút ☰ trên màn hình rồi chọn \"Thoát game\".\nKhi thoát, Game Center hỏi có lưu lại chỗ đang chơi không. Save trong game luôn được giữ.",
-  "android.help_disc": "Khi game báo cho đĩa tiếp theo vào: bấm nút ☰ trên màn hình (tay cầm: bấm lún cùng lúc 2 cần analog), chọn \"Đổi đĩa\" rồi chọn đĩa. Save trên thẻ nhớ dùng chung cho mọi đĩa.",
+  "android.help_exit": "Để tránh lỡ tay, phải bấm 2 lần mới thoát:\n• Bấm nút Quay lại của máy 2 lần, hoặc\n• Tay cầm: bấm cùng lúc START và SELECT, 2 lần, hoặc\n• Bấm nút menu (ba gạch ngang) trên màn hình rồi chọn \"Thoát game\".\nKhi thoát, Game Center hỏi có lưu lại chỗ đang chơi không. Save trong game luôn được giữ.",
+  "android.help_disc": "Khi game báo cho đĩa tiếp theo vào: bấm nút menu (ba gạch ngang) trên màn hình (tay cầm: bấm lún cùng lúc 2 cần analog), chọn \"Đổi đĩa\" rồi chọn đĩa. Save trên thẻ nhớ dùng chung cho mọi đĩa.",
   "android.help_arcade": "Chép file .zip của game thùng vào thư mục game và giữ nguyên tên file, đó là mã game (kof98.zip, dino.zip). Game Neo Geo cần thêm neogeo.zip, game PGM cần pgm.zip trong thư mục BIOS.",
-  "android.help_bios": "Game PS1 chơi được ngay mà không cần BIOS. BIOS bạn tự sao lưu hợp pháp thì chép vào thư mục:\n{0}\nBản Android chưa chơi được game PS2.",
+  "android.help_bios": "Game PS1 chơi được ngay mà không cần BIOS. BIOS bạn tự sao lưu hợp pháp thì chép vào thư mục:\n{0}\nGame PS2 và PSP trên Android cũng không cần BIOS.",
   "android.help_errors": "Game Center ghi lại lỗi trong file:\n{0}\nKhi cần hỗ trợ, hãy gửi file đó.",
   "android.help_license": "Game Center là phần mềm miễn phí: không bán, không quảng cáo, không có tính năng trả phí. Bản Android chạy game bằng LibretroDroid và các core libretro; mỗi thành phần giữ giấy phép riêng. Mã nguồn bản Android phát hành theo giấy phép GPL-3.0.",
+  "android.help_pad": "• Lên / Xuống: chọn game\n• A: chơi\n• LB / RB: đổi mục (Tất cả, PS1, SNES...)\n• Y: thêm / bỏ yêu thích\n• X: thêm tùy chọn (đổi tên, khôi phục save...)\n• START: cài đặt   • SELECT: trợ giúp\n• B: đóng hộp thoại",
   "android.unsupported": "Game này chưa chơi được trên Android."
 }

@@ -584,7 +584,7 @@ public partial class MainWindow : Window
 
     private async Task ChoosePlatform(GameItem item)
     {
-        var platforms = App.Catalog.Platforms.Where(p => p.Enabled).ToList();
+        var platforms = App.Catalog.Platforms.Where(p => p.AvailableOn(App.Paths.Os)).ToList();
         int i = await Dialogs.Choose(this, Loc.T("platform.title"), Loc.T("platform.text", item.Name),
             platforms.Select(p => p.Label).ToList());
         if (i < 0) return;

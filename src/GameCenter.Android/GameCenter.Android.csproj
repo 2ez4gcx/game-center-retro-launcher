@@ -56,6 +56,8 @@
   <ItemGroup>
     <AndroidAsset Include="..\..\Defaults\**\*" Link="Assets\Defaults\%(RecursiveDir)%(Filename)%(Extension)" />
     <AndroidAsset Include="..\..\Licenses\**\*" Link="Assets\Licenses\%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Tài nguyên core cần trong thư mục hệ thống (PPSSPP: phông chữ, flash0...), tải bằng tools/fetch-android-cores.ps1 -->
+    <AndroidAsset Include="system\**\*" Link="Assets\System\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

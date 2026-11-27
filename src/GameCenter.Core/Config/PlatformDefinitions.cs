@@ -36,6 +36,10 @@ public sealed class PlatformDefinition
     public string? AndroidCore { get; set; }
     /// <summary>false: hệ máy chưa chạy được trên Android (game hiện ở mục chưa hỗ trợ).</summary>
     public bool Android { get; set; } = true;
+    /// <summary>false: hệ máy chưa chạy được trên bản máy tính (chưa đóng kèm core), ví dụ PSP.</summary>
+    public bool Desktop { get; set; } = true;
+    /// <summary>Tay cầm của máy có cần analog (PS2, PSP): bản Android hiện thêm cần analog ảo trên màn hình.</summary>
+    public bool Analog { get; set; }
     public List<string> Extensions { get; set; } = new();
     /// <summary>Game chạy từ đĩa (PS1, PS2): game nằm một mình trong thư mục thì lấy tên thư mục làm tên game.</summary>
     public bool Disc { get; set; }
@@ -46,6 +50,9 @@ public sealed class PlatformDefinition
     /// <summary>Hệ máy có bắt buộc BIOS trên hệ điều hành cho trước không.</summary>
     public bool BiosRequiredFor(Os os) =>
         Bios != null && (os == Os.Android ? Bios.RequiredOnAndroid ?? Bios.Required : Bios.Required);
+
+    /// <summary>Hệ máy chơi được trên hệ điều hành cho trước không (đang bật và có core cho hệ đó).</summary>
+    public bool AvailableOn(Os os) => Enabled && (os == Os.Android ? Android : Desktop);
 
     /// <summary>Core của hệ máy trên hệ điều hành cho trước.</summary>
     public string CoreFor(Os os) => os == Os.Android && !string.IsNullOrEmpty(AndroidCore) ? AndroidCore : Core;

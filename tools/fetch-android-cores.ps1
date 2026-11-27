@@ -35,4 +35,16 @@ foreach ($abi in $Abis) {
         Remove-Item $zip
     }
 }
+# PPSSPP (PSP) cần phông chữ và dữ liệu của nó trong <thư mục hệ thống>/PPSSPP: đóng vào APK (assets/System)
+if ($cores -contains 'ppsspp_libretro') {
+    $system = Join-Path $root 'src/GameCenter.Android/system'
+    $zip = Join-Path $env:TEMP 'gc-PPSSPP.zip'
+    Write-Host 'PPSSPP.zip (tài nguyên hệ thống)'
+    Invoke-WebRequest 'https://buildbot.libretro.com/assets/system/PPSSPP.zip' -OutFile $zip -UseBasicParsing
+    if (Test-Path (Join-Path $system 'PPSSPP')) { Remove-Item (Join-Path $system 'PPSSPP') -Recurse -Force }
+    New-Item -ItemType Directory -Force $system | Out-Null
+    [IO.Compression.ZipFile]::ExtractToDirectory($zip, $system)
+    Remove-Item $zip
+}
+
 Get-ChildItem (Join-Path $root 'src/GameCenter.Android/cores') -Recurse -File | ForEach-Object { '{0,8:N1} MB  {1}' -f ($_.Length / 1MB), $_.FullName.Substring($root.Length + 1) }

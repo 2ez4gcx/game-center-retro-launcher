@@ -1,6 +1,7 @@
 using GameCenter.Core.Config;
 using GameCenter.Core.Data;
 using GameCenter.Core.Emulation;
+using GameCenter.Core.Scanning;
 
 namespace GameCenter.Tests;
 
@@ -71,5 +72,26 @@ public class AndroidTests
         var plan = new EmulatorLauncher(paths, env.Catalog, new AppSettings())
             .PlanEmbedded(new GameRecord { Platform = "NES", LaunchFile = rom, SourceFile = rom });
         Assert.Equal(LaunchProblem.UnknownPlatform, plan.Problem);
+    }
+
+    [Fact]
+    public void PspDisc_IsPlayableOnAndroid_AndStillUnsupportedOnDesktop()
+    {
+        using var env = new TestEnv();
+        var iso = env.File("a/Patapon.iso", Fake.Disc(null, false, "PSP GAME"));
+
+        var android = new GameScanner(env.Catalog, env.Paths.GamesDir, env.Paths.PlaylistsDir) { Os = Os.Android }.Scan();
+        var game = Assert.Single(android);
+        Assert.Equal("PSP", game.Platform);
+        Assert.Equal(ScanStatus.Ok, game.Status);
+
+        var desktop = new GameScanner(env.Catalog, env.Paths.GamesDir, env.Paths.PlaylistsDir) { Os = Os.Windows }.Scan();
+        Assert.Equal(ScanStatus.Unknown, Assert.Single(desktop).Status);
+
+        var psp = env.Catalog.Get("PSP")!;
+        Assert.True(psp.AvailableOn(Os.Android));
+        Assert.False(psp.AvailableOn(Os.Windows));
+        Assert.True(psp.Analog);
+        Assert.Equal("libppsspp_libretro_android.so", OsPlatform.CoreFileName(psp.CoreFor(Os.Android), Os.Android));
     }
 }

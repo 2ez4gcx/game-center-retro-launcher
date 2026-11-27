@@ -129,12 +129,21 @@ public sealed class MainView : UserControl
         _onResumed = () => Dispatcher.UIThread.Post(() => _ = RescanAsync());
         AttachedToVisualTree += (_, _) =>
         {
-            if (MainActivity.Instance is { } activity) activity.Resumed += _onResumed;
+            if (MainActivity.Instance is { } activity)
+            {
+                activity.Resumed += _onResumed;
+                activity.GamepadButton += OnGamepadButton;
+            }
             if (TopLevel.GetTopLevel(this) is { } top) top.BackRequested += OnBackRequested;
+            FocusList();
         };
         DetachedFromVisualTree += (_, _) =>
         {
-            if (MainActivity.Instance is { } activity) activity.Resumed -= _onResumed;
+            if (MainActivity.Instance is { } activity)
+            {
+                activity.Resumed -= _onResumed;
+                activity.GamepadButton -= OnGamepadButton;
+            }
             if (TopLevel.GetTopLevel(this) is { } top) top.BackRequested -= OnBackRequested;
         };
 
@@ -159,6 +168,46 @@ public sealed class MainView : UserControl
         VerticalAlignment = VerticalAlignment.Center,
     };
 
+    /// <summary>
+    /// Nút tay cầm trên màn hình chính, như bản máy tính: Y yêu thích, X thêm tùy chọn, LB / RB đổi mục,
+    /// START cài đặt, SELECT trợ giúp. (A = chơi và B = quay lại do MainActivity đổi thành Enter / Back.)
+    /// </summary>
+    private void OnGamepadButton(global::Android.Views.Keycode key)
+    {
+        if (_overlay.IsVisible || _playing) return;
+        var game = _games.SelectedItem as GameRecord;
+        switch (key)
+        {
+            case global::Android.Views.Keycode.ButtonY when game != null: ToggleFavorite(game); break;
+            case global::Android.Views.Keycode.ButtonX when game != null: _ = ShowMore(game); break;
+            case global::Android.Views.Keycode.ButtonL1: MoveTab(-1); break;
+            case global::Android.Views.Keycode.ButtonR1: MoveTab(+1); break;
+            case global::Android.Views.Keycode.ButtonStart: _ = ShowSettings(); break;
+            case global::Android.Views.Keycode.ButtonSelect: _ = ShowHelp(); break;
+        }
+    }
+
+    /// <summary>
+    /// Đưa tiêu điểm phím về game đang chọn, để tay cầm / điều khiển TV / bàn phím bấm Lên, Xuống, A là dùng được ngay
+    /// mà không phải bấm Tab qua các nút phía trên. Gọi sau mỗi lần nạp lại danh sách (nạp lại làm mất tiêu điểm),
+    /// trừ khi đang gõ tìm kiếm hoặc đang có hộp thoại. Chạy sau khi bố cục xong vì dòng game phải được tạo ra trước.
+    /// </summary>
+    private void FocusList() => Dispatcher.UIThread.Post(() =>
+    {
+        if (_overlay.IsVisible || _search.IsFocused) return;
+        var selected = _games.SelectedItem;
+        ((selected != null ? _games.ContainerFromItem(selected) as Control : null) ?? _games).Focus();
+    }, DispatcherPriority.Background);
+
+    private void MoveTab(int step)
+    {
+        if (_tabs.ItemsSource is not List<Tab> tabs || tabs.Count == 0) return;
+        int i = (tabs.FindIndex(t => t.Key == _tab) + step + tabs.Count) % tabs.Count;
+        _tabs.SelectedItem = tabs[i];
+        _tabs.ScrollIntoView(tabs[i]);
+        _games.Focus();
+    }
+
     /// <summary>Nút Back của Android: đang có hộp thoại thì đóng hộp thoại, không thì để hệ thống xử lý (thoát app).</summary>
     private void OnBackRequested(object? sender, RoutedEventArgs e)
     {
@@ -172,8 +221,15 @@ public sealed class MainView : UserControl
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto"), Margin = new Thickness(6, 10) };
         if (g == null) return grid;
 
-        var title = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        if (g.IsFavorite) title.Children.Add(new TextBlock { Text = "★", FontSize = 22, Foreground = Gold, VerticalAlignment = VerticalAlignment.Center });
+        // DockPanel (không phải StackPanel ngang): tên game được giới hạn bề rộng nên tự xuống dòng,
+        // không tràn ra đè lên nút "⋯" trên màn hình hẹp
+        var title = new DockPanel();
+        if (g.IsFavorite)
+        {
+            var star = new TextBlock { Text = "★", FontSize = 22, Foreground = Gold, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 0, 8, 0) };
+            DockPanel.SetDock(star, Dock.Left);
+            title.Children.Add(star);
+        }
         title.Children.Add(new TextBlock { Text = g.Name, FontSize = 22, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap });
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         text.Children.Add(title);
@@ -248,7 +304,8 @@ public sealed class MainView : UserControl
         }
         var shown = q.ToList();
         _games.ItemsSource = shown;
-        _games.SelectedItem = shown.FirstOrDefault(g => g.Id == selectId);
+        // Luôn có một game được chọn (game đầu tiên nếu chưa chọn gì): tay cầm / điều khiển TV bấm A là chơi ngay
+        _games.SelectedItem = shown.FirstOrDefault(g => g.Id == selectId) ?? shown.FirstOrDefault();
 
         _games.IsVisible = shown.Count > 0;
         _empty.IsVisible = shown.Count == 0;
@@ -261,6 +318,7 @@ public sealed class MainView : UserControl
         _status.Text = _scanning ? Loc.T("main.scanning")
             : shown.Count == _all.Count ? Loc.Plural("main.status_count", _all.Count)
             : Loc.T("main.status_filtered", shown.Count, _all.Count);
+        FocusList();
     }
 
     /// <summary>Tìm kiếm không cần gõ dấu ("dai chien" tìm ra "Đại chiến"), như bản máy tính.</summary>
@@ -463,6 +521,7 @@ public sealed class MainView : UserControl
         }
         Add(Loc.T("help.play_title"), Loc.T("android.help_play", App.Paths.GamesDir));
         Add(Loc.T("help.exit_title"), Loc.T("android.help_exit"));
+        Add(Loc.T("help.pad_title"), Loc.T("android.help_pad"));
         Add(Loc.T("help.disc_title"), Loc.T("android.help_disc"));
         Add(Loc.T("help.arcade_title"), Loc.T("android.help_arcade") + "\n\n" + Loc.T("android.arcade_coin"));
         Add(Loc.T("help.bios_title"), Loc.T("android.help_bios", App.Paths.BiosDir));

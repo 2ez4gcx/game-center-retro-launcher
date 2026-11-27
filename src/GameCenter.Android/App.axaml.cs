@@ -71,6 +71,7 @@ public partial class App : Avalonia.Application
         Paths = new AppPaths(appDir, dataDir, Os.Android) { CoresDirOverride = context.ApplicationInfo!.NativeLibraryDir };
         Paths.EnsureDataFolders();
         Log.Init(Paths.LogFile);
+        InstallSystemAssets(context);
         Log.Info($"Khởi động Android. AppDir={Paths.AppDir} DataDir={Paths.DataDir} Cores={Paths.CoresDir}");
 
         bool hadSettings = File.Exists(Paths.SettingsJson);
@@ -85,6 +86,25 @@ public partial class App : Avalonia.Application
         Catalog = PlatformCatalog.Load(Paths.PlatformsJson);
         Db = new GameDatabase(Paths.DatabaseFile);
         Db.Initialize(Catalog);
+    }
+
+    /// <summary>
+    /// Tài nguyên core cần trong thư mục hệ thống (BIOS/): PPSSPP đòi phông chữ và dữ liệu của nó ở BIOS/PPSSPP.
+    /// Đóng trong APK (assets/System), chép ra một lần cho mỗi bản cài (ghi dấu bằng thời điểm cập nhật app).
+    /// </summary>
+    private static void InstallSystemAssets(global::Android.Content.Context context)
+    {
+        try
+        {
+            if ((context.Assets!.List("System") ?? Array.Empty<string>()).Length == 0) return;
+            var stamp = context.PackageManager!.GetPackageInfo(context.PackageName!, 0)!.LastUpdateTime.ToString();
+            var marker = Path.Combine(Paths.BiosDir, ".gamecenter-system-assets");
+            if (File.Exists(marker) && File.ReadAllText(marker) == stamp) return;
+            CopyAssets(context, "System", Paths.BiosDir);
+            File.WriteAllText(marker, stamp);
+            Log.Info("Đã chép tài nguyên hệ thống của core vào thư mục BIOS");
+        }
+        catch (Exception ex) { Log.Error("Không chép được tài nguyên hệ thống của core", ex); }
     }
 
     private static void CopyAssets(global::Android.Content.Context context, string assetDir, string targetDir)

@@ -65,6 +65,9 @@ public sealed class GameScanner
     /// <summary>Danh sách game thùng (null nếu tắt hệ máy Arcade trong platforms.json). Chỉ nạp khi gặp file zip / 7z.</summary>
     private ArcadeDatabase? Arcade => _catalog.Get(ArcadeDatabase.Platform) == null ? null : _arcadeDb ??= ArcadeDatabase.Default;
 
+    /// <summary>Hệ điều hành đang chạy: quyết định hệ máy nào chơi được (PSP hiện chỉ có trên Android). Kiểm thử đặt lại.</summary>
+    public Os Os { get; init; } = OsPlatform.Current;
+
     /// <summary>File BIOS người dùng chép nhầm vào thư mục Games: không hiện như game, Game Center chép sang thư mục BIOS.</summary>
     public List<string> BiosFiles { get; } = new();
 
@@ -422,6 +425,8 @@ public sealed class GameScanner
     {
         var kind = DiscImage.Detect(file);
         string? platform = kind == DiscKind.Ps2 || (kind is DiscKind.Unknown or DiscKind.Other && hint?.Name == "PS2") ? "PS2" : null;
+        // Đĩa PSP (UMD): chơi được nếu hệ máy PSP có core trên hệ điều hành này, không thì báo chưa hỗ trợ
+        if (kind == DiscKind.Psp && _catalog.Get("PSP") is { } psp && psp.AvailableOn(Os)) platform = "PSP";
         var g = NewGame(file, platform, Path.GetFileNameWithoutExtension(file), new FileInfo(file).Length);
         if (platform == null)
         {

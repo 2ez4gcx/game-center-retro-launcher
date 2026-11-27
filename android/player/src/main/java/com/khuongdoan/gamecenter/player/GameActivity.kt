@@ -51,6 +51,7 @@ class GameActivity : ComponentActivity() {
         const val EXTRA_SAVE_STATE_ON_EXIT = "saveStateOnExit"
         const val EXTRA_VARIABLES = "variables"       // tùy chọn core, mỗi phần tử "khóa=giá trị"
         const val EXTRA_ENV = "env"                   // biến môi trường cho core, mỗi phần tử "TÊN=giá trị"
+        const val EXTRA_ANALOG = "analog"             // true: hiện cần analog ảo (PS2, PSP)
         const val EXTRA_TEXT_EXIT_AGAIN = "textExitAgain"
         const val EXTRA_TITLE = "title"                       // tên game, làm tiêu đề menu
         const val EXTRA_TEXT_MENU_CONTINUE = "textMenuContinue"
@@ -136,13 +137,18 @@ class GameActivity : ComponentActivity() {
         }
         lifecycle.addObserver(retroView)
 
-        touchPad = TouchPadView(this) { keyCode, down ->
-            if (keyCode == KeyEvent.KEYCODE_MENU) {
-                if (down) showMenu()
-            } else {
-                retroView.sendKeyEvent(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, keyCode)
-            }
-        }
+        touchPad = TouchPadView(
+            this,
+            analog = intent.getBooleanExtra(EXTRA_ANALOG, false),
+            onKey = { keyCode, down ->
+                if (keyCode == KeyEvent.KEYCODE_MENU) {
+                    if (down) showMenu()
+                } else {
+                    retroView.sendKeyEvent(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, keyCode)
+                }
+            },
+            onAnalog = { x, y -> retroView.sendMotionEvent(GLRetroView.MOTION_SOURCE_ANALOG_LEFT, x, y) },
+        )
         // Đã cắm tay cầm thì không cần nút cảm ứng
         touchPad.visibility = if (hasGamepad()) View.GONE else View.VISIBLE
 
@@ -227,7 +233,7 @@ class GameActivity : ComponentActivity() {
     // ---------------------------------------------------------------- Menu trong game
 
     /**
-     * Menu khi đang chơi: chơi tiếp, đổi đĩa (game nhiều đĩa), thoát game. Mở bằng nút ☰ trên màn hình,
+     * Menu khi đang chơi: chơi tiếp, đổi đĩa (game nhiều đĩa), thoát game. Mở bằng nút menu (ba gạch) trên màn hình,
      * hoặc bấm lún cùng lúc 2 cần analog (L3 + R3) / nút giữa của tay cầm.
      */
     private fun showMenu() {
