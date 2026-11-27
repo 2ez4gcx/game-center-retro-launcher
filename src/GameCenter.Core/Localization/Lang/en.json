@@ -270,5 +270,16 @@
   "android.exit_again": "Press again to quit...",
   "android.empty_text": "Copy your games into this folder (connect the device to a computer with a USB cable), then tap \"Scan\":\n\n{0}",
   "android.arcade_coin": "Arcade machines need a coin before you can play:\n• Insert coin: press SELECT\n• Start: press START\nWhen you run out of credits, insert a coin and press START to continue.",
+  "android.menu_continue": "Keep playing",
+  "android.menu_disc": "Change disc",
+  "android.menu_exit": "Quit game",
+  "android.disc_n": "Disc {0}",
+  "android.help_play": "1. Connect the device to a computer with a USB cable and copy your games into:\n{0}\nOne folder for everything is fine; Game Center works out the console by itself.\n2. Open Game Center and tap \"Scan\".\n3. Tap a game to play.",
+  "android.help_exit": "To avoid quitting by accident, you have to press twice:\n• Press the device's Back button twice, or\n• Controller: press START and SELECT together, twice, or\n• Tap the ☰ button on screen and choose \"Quit game\".\nWhen you quit, Game Center asks whether to save your place. In-game saves are always kept.",
+  "android.help_disc": "When the game asks for the next disc: tap the ☰ button on screen (controller: click both analog sticks together), choose \"Change disc\" and pick the disc. Memory card saves are shared by all discs.",
+  "android.help_arcade": "Copy the arcade game's .zip file into the games folder and keep its file name, which is the game code (kof98.zip, dino.zip). Neo Geo games also need neogeo.zip, PGM games need pgm.zip, in the BIOS folder.",
+  "android.help_bios": "PS1 games play right away without a BIOS. A BIOS you backed up legally yourself goes into:\n{0}\nThe Android version cannot play PS2 games yet.",
+  "android.help_errors": "Game Center records errors in this file:\n{0}\nSend that file when you need help.",
+  "android.help_license": "Game Center is free software: not sold, no ads, no paid features. The Android version runs games with LibretroDroid and libretro cores; each component keeps its own license. The source code of the Android version is released under the GPL-3.0 license.",
   "android.unsupported": "This game cannot be played on Android yet."
 }

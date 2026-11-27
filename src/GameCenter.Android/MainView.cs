@@ -21,7 +21,7 @@ namespace GameCenter.Droid;
 /// Màn hình chính trên Android: một danh sách game chữ lớn, chạm vào game là chơi. Cùng các mục và câu chữ với
 /// bản máy tính (src/GameCenter.Desktop): tìm kiếm không dấu, yêu thích, chơi gần đây, đổi tên, chọn hệ máy,
 /// khôi phục save, cài đặt. Android không có cửa sổ con nên mọi hộp thoại là lớp phủ trong cùng màn hình.
-/// Chưa có: ảnh bìa, ghép đĩa bằng tay, trợ giúp.
+/// Chưa có: ảnh bìa.
 /// </summary>
 public sealed class MainView : UserControl
 {
@@ -64,19 +64,32 @@ public sealed class MainView : UserControl
         scan.Click += (_, _) => _ = RescanAsync();
         var settings = HeaderButton("⚙");
         settings.Click += (_, _) => _ = ShowSettings();
+        var help = HeaderButton("?");
+        help.Click += (_, _) => _ = ShowHelp();
 
         _search.Watermark = Plain(Loc.T("main.search"));
         _search.FontSize = 20;
         _search.Padding = new Thickness(14, 10);
         _search.VerticalAlignment = VerticalAlignment.Center;
-        _search.Margin = new Thickness(16, 0, 10, 0);
+        _search.Margin = new Thickness(0, 10, 0, 0);
         _search.TextChanged += (_, _) => ShowGames();
 
-        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,Auto"), Margin = new Thickness(16, 12, 16, 4) };
-        header.Children.Add(new TextBlock { Text = "Game Center", FontSize = 28, FontWeight = FontWeight.Bold, VerticalAlignment = VerticalAlignment.Center });
-        Grid.SetColumn(_search, 1); header.Children.Add(_search);
-        Grid.SetColumn(scan, 2); header.Children.Add(scan);
-        Grid.SetColumn(settings, 3); header.Children.Add(settings);
+        // Hai hàng: tên app và các nút ở trên, ô tìm kiếm rộng hết chiều ngang ở dưới. Xếp chung một hàng thì màn hình
+        // điện thoại (rộng khoảng 360 dp) không đủ chỗ: ô tìm kiếm bị ép sát và các nút chồng lên nhau, không bấm được.
+        var header = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto"), RowDefinitions = new RowDefinitions("Auto,Auto"),
+            Margin = new Thickness(16, 12, 16, 4),
+        };
+        header.Children.Add(new TextBlock
+        {
+            Text = "Game Center", FontSize = 28, FontWeight = FontWeight.Bold, VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        });
+        Grid.SetColumn(scan, 1); header.Children.Add(scan);
+        Grid.SetColumn(settings, 2); header.Children.Add(settings);
+        Grid.SetColumn(help, 3); header.Children.Add(help);
+        Grid.SetRow(_search, 1); Grid.SetColumnSpan(_search, 4); header.Children.Add(_search);
 
         _tabs.Background = Brushes.Transparent;
         _tabs.Margin = new Thickness(8, 0);
@@ -330,6 +343,12 @@ public sealed class MainView : UserControl
             (Loc.T("more.choose_platform"), () => ChoosePlatform(game)),
             (Loc.T("more.restore_save"), () => RestoreSave(game)),
         };
+        if (App.Catalog.IsDiscPlatform(game.Platform))
+        {
+            options.Add((Loc.T("more.merge_discs"), () => MergeDiscs(game)));
+            if (DiscGroups.Load(App.Paths).GroupOf(game.SourceFile) != null)
+                options.Add((Loc.T("more.split_discs"), () => SplitDiscs(game)));
+        }
         int i = await Choose(game.Name, null, options.Select(o => o.Label).ToList());
         if (i >= 0) await options[i].Run();
     }
@@ -382,6 +401,99 @@ public sealed class MainView : UserControl
         {
             Log.Error("Khôi phục save lỗi", ex);
             await Info(Loc.T("settings.save_error_title"), ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Ghép thêm đĩa khi các đĩa khác tên nên không tự ghép được (đĩa 1 bản Việt hóa, đĩa sau bản gốc...).
+    /// Chọn game kế tiếp (là bộ nhiều đĩa thì góp hết các đĩa), quét lại để thành một game nhiều đĩa.
+    /// </summary>
+    private async Task MergeDiscs(GameRecord game)
+    {
+        var candidates = _all.Where(g => g.Id != game.Id && g.Platform == game.Platform).ToList();
+        if (candidates.Count == 0)
+        {
+            await Info(Loc.T("merge.title"), Loc.T("merge.none", PlatformLabel(game)));
+            return;
+        }
+        string Label(GameRecord g) => $"{g.Name}  ·  {Path.GetFileName(g.SourceFile)}" +
+                                      (g.DiscCount >= 2 ? $"  ·  {Loc.T("game.discs", g.DiscCount)}" : "");
+        int i = await Choose(Loc.T("merge.title"), Loc.T("merge.text", game.Name, Math.Max(1, game.DiscCount) + 1),
+            candidates.Select(Label).ToList());
+        if (i < 0) return;
+        var groups = DiscGroups.Load(App.Paths);
+        groups.Append(game.SourceFile, candidates[i].SourceFile);
+        groups.Save();
+        Log.Info($"Ghép đĩa: {game.SourceFile} + {candidates[i].SourceFile}");
+        await RescanAsync();
+    }
+
+    private async Task SplitDiscs(GameRecord game)
+    {
+        var groups = DiscGroups.Load(App.Paths);
+        if (!groups.Split(game.SourceFile)) return;
+        groups.Save();
+        Log.Info($"Tách đĩa đã ghép: {game.SourceFile}");
+        await RescanAsync();
+    }
+
+    // ------------------------------------------------------------------ Trợ giúp
+
+    private const string Author = "Khuong Doan";
+    private const string Contact = "https://khuongdoan.com/";
+
+    private static string AppVersion()
+    {
+        try
+        {
+            var context = global::Android.App.Application.Context;
+            return context.PackageManager!.GetPackageInfo(context.PackageName!, 0)!.VersionName ?? "";
+        }
+        catch { return ""; }
+    }
+
+    private async Task ShowHelp()
+    {
+        if (_overlay.IsVisible || _playing) return;
+        var body = new StackPanel { Spacing = 10 };
+        void Add(string title, string text)
+        {
+            body.Children.Add(SectionLabel(title));
+            body.Children.Add(new TextBlock { Text = text, FontSize = 19, TextWrapping = TextWrapping.Wrap });
+        }
+        Add(Loc.T("help.play_title"), Loc.T("android.help_play", App.Paths.GamesDir));
+        Add(Loc.T("help.exit_title"), Loc.T("android.help_exit"));
+        Add(Loc.T("help.disc_title"), Loc.T("android.help_disc"));
+        Add(Loc.T("help.arcade_title"), Loc.T("android.help_arcade") + "\n\n" + Loc.T("android.arcade_coin"));
+        Add(Loc.T("help.bios_title"), Loc.T("android.help_bios", App.Paths.BiosDir));
+        Add(Loc.T("help.errors_title"), Loc.T("android.help_errors", App.Paths.LogFile));
+        Add(Loc.T("help.about_title"), Loc.T("help.about_text", AppVersion(), Author, Contact));
+        Add(Loc.T("help.license_title"), Loc.T("android.help_license"));
+
+        bool licenses = false;
+        var licenseButton = new Button { Content = Loc.T("help.license_title"), FontSize = 20, Padding = new Thickness(20, 12) };
+        licenseButton.Click += (_, _) => { licenses = true; _cancelDialog?.Invoke(); };
+        body.Children.Add(licenseButton);
+
+        await ShowDialog(Loc.T("help.title"), null, body, new[] { Loc.T("dialog.close") }, vertical: false, cancelIndex: 0);
+        if (licenses) await ShowLicenses();
+    }
+
+    /// <summary>Giấy phép của Game Center và từng thành phần nguồn mở (các file .txt trong Licenses/, đóng trong APK).</summary>
+    private async Task ShowLicenses()
+    {
+        var files = Directory.Exists(App.Paths.LicensesDir)
+            ? Directory.EnumerateFiles(App.Paths.LicensesDir, "*.txt", SearchOption.AllDirectories).OrderBy(f => f).ToList()
+            : new List<string>();
+        if (files.Count == 0) return;
+        while (true)
+        {
+            int i = await Choose(Loc.T("help.license_title"), null, files.Select(f => Path.GetFileNameWithoutExtension(f)!).ToList());
+            if (i < 0) return;
+            string text;
+            try { text = File.ReadAllText(files[i]); }
+            catch (Exception ex) { text = ex.Message; }
+            await Info(Path.GetFileNameWithoutExtension(files[i]), text);
         }
     }
 

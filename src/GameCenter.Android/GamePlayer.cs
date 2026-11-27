@@ -66,6 +66,11 @@ public sealed class GamePlayer
         intent.PutExtra("variables", CoreVariables());
         intent.PutExtra("env", CoreEnvironment(plan.CorePath!, paths.SavesDir));
         intent.PutExtra("textExitAgain", Loc.T("android.exit_again"));
+        intent.PutExtra("title", game.Name);
+        intent.PutExtra("textMenuContinue", Loc.T("android.menu_continue"));
+        intent.PutExtra("textMenuDisc", Loc.T("android.menu_disc"));
+        intent.PutExtra("textMenuExit", Loc.T("android.menu_exit"));
+        intent.PutExtra("textDisc", Loc.T("android.disc_n", "{0}"));
 
         var startedUtc = DateTime.UtcNow;
         App.Db.MarkPlayed(game.Id);

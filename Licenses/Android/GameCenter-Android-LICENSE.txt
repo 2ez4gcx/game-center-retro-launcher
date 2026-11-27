@@ -1,0 +1,18 @@
+Game Center cho Android
+Bản quyền (c) 2026 Khuong Doan — https://khuongdoan.com/
+
+Bản Android của Game Center chạy game bằng thư viện LibretroDroid (GPL-3.0), nên toàn bộ ứng dụng Android
+(phần giao diện trong src/GameCenter.Android, phần dùng chung trong src/GameCenter.Core và màn hình chơi game
+trong android/player) được phát hành theo giấy phép GNU General Public License phiên bản 3 (GPL-3.0).
+
+Bạn được tự do dùng, sao chép, sửa và phát hành lại ứng dụng theo các điều khoản của GPL-3.0.
+Nguyên văn giấy phép GPL-3.0: xem file RetroArch-LICENSE.txt trong thư mục Licenses (cùng nội dung).
+Mã nguồn: https://github.com/2ez4gcx/game-center-retro-launcher
+
+Game Center miễn phí: không bán, không quảng cáo, không có tính năng trả phí. Các core Snes9x, Genesis Plus GX
+và FinalBurn Neo chỉ cho phép phân phối phi thương mại (xem Licenses/Core-LICENSES).
+
+Game Center không phải sản phẩm chính thức của Sony, Nintendo, Sega, SNK, Capcom hay hãng game nào khác.
+Ứng dụng KHÔNG kèm game (ROM/ISO) hoặc BIOS thương mại. Bạn chỉ nên dùng game và BIOS mà bạn sở hữu hợp pháp.
+
+PHẦN MỀM ĐƯỢC CUNG CẤP "NGUYÊN TRẠNG", KHÔNG KÈM BẤT KỲ BẢO ĐẢM NÀO.

@@ -1,0 +1,7 @@
+LibretroDroid
+Tác giả: Filippo Scognamiglio (Swordfish90) và những người đóng góp
+Mã nguồn: https://github.com/Swordfish90/LibretroDroid
+Giấy phép: GNU General Public License phiên bản 3 (GPL-3.0)
+
+Game Center cho Android dùng LibretroDroid (không sửa đổi) để nạp và chạy các core libretro ngay trong ứng dụng.
+Nguyên văn giấy phép GPL-3.0: xem file RetroArch-LICENSE.txt trong thư mục Licenses (cùng nội dung).

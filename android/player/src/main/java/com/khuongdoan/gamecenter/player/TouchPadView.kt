@@ -13,7 +13,7 @@ import kotlin.math.hypot
 
 /**
  * Nút cảm ứng phủ trên màn hình game (máy không cắm tay cầm): phím hướng bên trái, 4 nút bên phải,
- * L/R ở hai góc trên, SELECT/START ở giữa cạnh dưới. Nút to, chữ lớn, bấm nhiều nút cùng lúc được.
+ * L/R ở hai góc trên, SELECT/START ở giữa cạnh dưới, nút ☰ (menu: đổi đĩa, thoát) ở giữa hàng L/R. Nút to, chữ lớn, bấm nhiều nút cùng lúc được.
  * Mỗi lần nút đổi trạng thái gọi [onKey] với mã phím Android (KEYCODE_BUTTON_*, KEYCODE_DPAD_*).
  */
 @SuppressLint("ViewConstructor")
@@ -32,6 +32,8 @@ class TouchPadView(context: Context, private val onKey: (keyCode: Int, down: Boo
         Button(KeyEvent.KEYCODE_BUTTON_R2, "R2"),
         Button(KeyEvent.KEYCODE_BUTTON_SELECT, "SELECT"),
         Button(KeyEvent.KEYCODE_BUTTON_START, "START"),
+        // Không phải nút của máy game: mở menu trong game (đổi đĩa, thoát)
+        Button(KeyEvent.KEYCODE_MENU, "☰"),
     )
     private val dpadKeys = intArrayOf(
         KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
@@ -72,6 +74,7 @@ class TouchPadView(context: Context, private val onKey: (keyCode: Int, down: Boo
         val midY = h - u * 0.85f
         place(KeyEvent.KEYCODE_BUTTON_SELECT, w / 2f - u * 0.8f, midY, u * 0.62f)
         place(KeyEvent.KEYCODE_BUTTON_START, w / 2f + u * 0.8f, midY, u * 0.62f)
+        place(KeyEvent.KEYCODE_MENU, w / 2f, shoulderY, u * 0.5f)
     }
 
     override fun onDraw(canvas: Canvas) {

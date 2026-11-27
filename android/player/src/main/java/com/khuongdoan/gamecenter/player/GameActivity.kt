@@ -1,6 +1,7 @@
 package com.khuongdoan.gamecenter.player
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
@@ -51,6 +52,11 @@ class GameActivity : ComponentActivity() {
         const val EXTRA_VARIABLES = "variables"       // tùy chọn core, mỗi phần tử "khóa=giá trị"
         const val EXTRA_ENV = "env"                   // biến môi trường cho core, mỗi phần tử "TÊN=giá trị"
         const val EXTRA_TEXT_EXIT_AGAIN = "textExitAgain"
+        const val EXTRA_TITLE = "title"                       // tên game, làm tiêu đề menu
+        const val EXTRA_TEXT_MENU_CONTINUE = "textMenuContinue"
+        const val EXTRA_TEXT_MENU_DISC = "textMenuDisc"
+        const val EXTRA_TEXT_MENU_EXIT = "textMenuExit"
+        const val EXTRA_TEXT_DISC = "textDisc"                // "Đĩa {0}"
 
         /** Kết quả trả về khi core hoặc game không mở được; mã lỗi LibretroDroid nằm trong [EXTRA_ERROR]. */
         const val RESULT_ERROR = Activity.RESULT_FIRST_USER
@@ -73,6 +79,9 @@ class GameActivity : ComponentActivity() {
     private var lastExitPress = 0L
     private var startDown = false
     private var selectDown = false
+    private var thumbLDown = false
+    private var thumbRDown = false
+    private var menu: AlertDialog? = null
 
     private val sramTick = object : Runnable {
         override fun run() {
@@ -124,7 +133,11 @@ class GameActivity : ComponentActivity() {
         lifecycle.addObserver(retroView)
 
         touchPad = TouchPadView(this) { keyCode, down ->
-            retroView.sendKeyEvent(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, keyCode)
+            if (keyCode == KeyEvent.KEYCODE_MENU) {
+                if (down) showMenu()
+            } else {
+                retroView.sendKeyEvent(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, keyCode)
+            }
         }
         // Đã cắm tay cầm thì không cần nút cảm ứng
         touchPad.visibility = if (hasGamepad()) View.GONE else View.VISIBLE
@@ -207,6 +220,51 @@ class GameActivity : ComponentActivity() {
         }
     }
 
+    // ---------------------------------------------------------------- Menu trong game
+
+    /**
+     * Menu khi đang chơi: chơi tiếp, đổi đĩa (game nhiều đĩa), thoát game. Mở bằng nút ☰ trên màn hình,
+     * hoặc bấm lún cùng lúc 2 cần analog (L3 + R3) / nút giữa của tay cầm.
+     */
+    private fun showMenu() {
+        if (exiting || !gameStarted || menu?.isShowing == true) return
+        val disks = try { retroView.getAvailableDisks() } catch (e: Exception) { 0 }
+        val labels = ArrayList<String>()
+        val actions = ArrayList<() -> Unit>()
+        labels += text(EXTRA_TEXT_MENU_CONTINUE, "Chơi tiếp"); actions += {}
+        if (disks > 1) {
+            labels += text(EXTRA_TEXT_MENU_DISC, "Đổi đĩa"); actions += { showDiscMenu(disks) }
+        }
+        labels += text(EXTRA_TEXT_MENU_EXIT, "Thoát game"); actions += { exitGame() }
+        menu = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle(intent.getStringExtra(EXTRA_TITLE))
+            .setItems(labels.toTypedArray()) { _, which -> actions[which]() }
+            .setOnDismissListener { hideSystemBars(); retroView.requestFocus() }
+            .show()
+    }
+
+    private fun showDiscMenu(disks: Int) {
+        val current = try { retroView.getCurrentDisk() } catch (e: Exception) { -1 }
+        val pattern = text(EXTRA_TEXT_DISC, "Đĩa {0}")
+        val labels = Array(disks) { i -> pattern.replace("{0}", (i + 1).toString()) + if (i == current) "  ✓" else "" }
+        menu = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle(text(EXTRA_TEXT_MENU_DISC, "Đổi đĩa"))
+            .setItems(labels) { _, which ->
+                if (which != current) {
+                    try {
+                        retroView.changeDisk(which)
+                        Log.i(TAG, "Đổi sang đĩa ${which + 1}/$disks")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Không đổi được đĩa", e)
+                    }
+                }
+            }
+            .setOnDismissListener { hideSystemBars(); retroView.requestFocus() }
+            .show()
+    }
+
+    private fun text(extra: String, fallback: String) = intent.getStringExtra(extra) ?: fallback
+
     // ---------------------------------------------------------------- Thoát game
 
     /** Lần đầu chỉ hiện "Nhấn lại để thoát...", lần thứ hai trong 3 giây mới thoát. */
@@ -246,6 +304,7 @@ class GameActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        menu?.dismiss()
         handler.removeCallbacks(sramTick)
         super.onDestroy()
     }
@@ -254,9 +313,18 @@ class GameActivity : ComponentActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (isGamepadEvent(event.source)) touchPad.visibility = View.GONE
+        val down = event.action == KeyEvent.ACTION_DOWN
         when (event.keyCode) {
-            KeyEvent.KEYCODE_BUTTON_START -> startDown = event.action == KeyEvent.ACTION_DOWN
-            KeyEvent.KEYCODE_BUTTON_SELECT -> selectDown = event.action == KeyEvent.ACTION_DOWN
+            KeyEvent.KEYCODE_BUTTON_START -> startDown = down
+            KeyEvent.KEYCODE_BUTTON_SELECT -> selectDown = down
+            KeyEvent.KEYCODE_BUTTON_THUMBL -> thumbLDown = down
+            KeyEvent.KEYCODE_BUTTON_THUMBR -> thumbRDown = down
+        }
+        // Mở menu: L3 + R3 cùng lúc, hoặc nút giữa của tay cầm
+        val thumbs = event.keyCode == KeyEvent.KEYCODE_BUTTON_THUMBL || event.keyCode == KeyEvent.KEYCODE_BUTTON_THUMBR
+        if (down && event.repeatCount == 0 && (event.keyCode == KeyEvent.KEYCODE_BUTTON_MODE || thumbLDown && thumbRDown && thumbs)) {
+            showMenu()
+            return true
         }
         if (startDown && selectDown && event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0
             && (event.keyCode == KeyEvent.KEYCODE_BUTTON_START || event.keyCode == KeyEvent.KEYCODE_BUTTON_SELECT)
