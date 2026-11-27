@@ -251,6 +251,33 @@ public class SaveGuardTests
         Assert.Contains(guard.ListBackups(loc), b => File.ReadAllText(Path.Combine(b.Dir, Beetle, "Game.srm")) == "hong");
     }
 
+    /// <summary>
+    /// Nhiều lần sao lưu liền nhau (máy nhanh: cùng một phần nghìn giây, như "Khôi phục" sao lưu trước rồi chép)
+    /// không được ghi đè bản trước. Lỗi cũ: thư mục đặt tên theo thời gian nên bản sau đè bản trước (CI macOS).
+    /// </summary>
+    [Fact]
+    public void Backups_InSameMillisecond_DoNotOverwriteEachOther()
+    {
+        using var env = new TestEnv();
+        // Đồng hồ đứng yên: mọi lần sao lưu cùng một phần nghìn giây
+        var now = new DateTime(2026, 11, 27, 9, 0, 0, 123);
+        var guard = new SaveGuard(env.Paths, () => now);
+        var loc = Shared(env, "Nhanh");
+        for (int i = 1; i <= 5; i++)
+        {
+            Srm(env, "Nhanh", $"lan {i}");
+            Assert.NotNull(guard.Backup(loc, includePs2Cards: false, force: true));
+        }
+        var backups = guard.ListBackups(loc);
+        Assert.Equal(new[] { "lan 5", "lan 4", "lan 3", "lan 2", "lan 1" },
+            backups.Select(b => File.ReadAllText(Path.Combine(b.Dir, Assert.Single(b.Files)))));
+
+        // Khôi phục ngay sau khi sao lưu: lấy đúng bản đã chọn, không phải bản vừa sao lưu trước khi khôi phục
+        Srm(env, "Nhanh", "lan 6");
+        guard.Restore(loc, backups.Last());
+        Assert.Equal("lan 1", ReadSrm(env, "Nhanh"));
+    }
+
     [Fact]
     public void Ps2_SharedCards_BackedUpAndRestored()
     {
