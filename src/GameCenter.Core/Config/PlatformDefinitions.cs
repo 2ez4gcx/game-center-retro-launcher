@@ -15,6 +15,11 @@ public sealed class BiosInfo
     public string? Detect { get; set; }
     /// <summary>true: không có BIOS thì không chạy được. false: core có BIOS thay thế (OpenBIOS/HLE).</summary>
     public bool Required { get; set; }
+    /// <summary>
+    /// Khác <see cref="Required"/> trên Android (core Android của hệ máy có thể không cần BIOS, ví dụ PS2 dùng Play!).
+    /// null: giống <see cref="Required"/>.
+    /// </summary>
+    public bool? RequiredOnAndroid { get; set; }
     public string? Note { get; set; }
 }
 
@@ -24,6 +29,13 @@ public sealed class PlatformDefinition
     public string DisplayName { get; set; } = "";
     public List<string> Folders { get; set; } = new();
     public string Core { get; set; } = "";
+    /// <summary>
+    /// Core dùng trên Android nếu khác bản máy tính (ví dụ PS1: PCSX ReARMed thay Beetle PSX HW, vì app Android
+    /// chỉ có OpenGL ES). null: dùng <see cref="Core"/>.
+    /// </summary>
+    public string? AndroidCore { get; set; }
+    /// <summary>false: hệ máy chưa chạy được trên Android (game hiện ở mục chưa hỗ trợ).</summary>
+    public bool Android { get; set; } = true;
     public List<string> Extensions { get; set; } = new();
     /// <summary>Game chạy từ đĩa (PS1, PS2): game nằm một mình trong thư mục thì lấy tên thư mục làm tên game.</summary>
     public bool Disc { get; set; }
@@ -31,6 +43,13 @@ public sealed class PlatformDefinition
     public BiosInfo? Bios { get; set; }
 
     /// <summary>Tên hiện trên giao diện: bản dịch "platform.name.&lt;Name&gt;" nếu có (ví dụ "Máy thùng"), không thì <see cref="DisplayName"/>.</summary>
+    /// <summary>Hệ máy có bắt buộc BIOS trên hệ điều hành cho trước không.</summary>
+    public bool BiosRequiredFor(Os os) =>
+        Bios != null && (os == Os.Android ? Bios.RequiredOnAndroid ?? Bios.Required : Bios.Required);
+
+    /// <summary>Core của hệ máy trên hệ điều hành cho trước.</summary>
+    public string CoreFor(Os os) => os == Os.Android && !string.IsNullOrEmpty(AndroidCore) ? AndroidCore : Core;
+
     [JsonIgnore]
     public string Label => Loc.Current.Has("platform.name." + Name) ? Loc.T("platform.name." + Name) : DisplayName;
 }

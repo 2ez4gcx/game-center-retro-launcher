@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+	<!-- extractNativeLibs: core libretro phải nằm thành file thật trên máy thì mới nạp được theo đường dẫn -->
+	<application android:label="Game Center" android:extractNativeLibs="true" android:allowBackup="true" android:isGame="true" />
+</manifest>

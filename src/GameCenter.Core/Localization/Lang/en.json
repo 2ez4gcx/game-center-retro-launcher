@@ -265,5 +265,10 @@
   "help.about_title": "About",
   "help.about_text": "Game Center version {0}\nAuthor: {1}  ·  {2}",
   "help.license_title": "Licenses",
-  "help.license_text": "Game Center is free software: it is not sold, has no ads and no paid features.\nGame Center uses the following open-source components, each under its own license:\n• RetroArch — GPLv3\n• Beetle PSX HW (PS1) — GPLv2\n• LRPS2 (PS2) — GPLv3\n• Gambatte (GB/GBC) — GPLv2\n• mGBA (GBA) — MPL 2.0\n• Snes9x (SNES) — separate non-commercial license\n• Genesis Plus GX (Mega Drive) — separate non-commercial license\n• FCEUmm (NES) — GPLv2\n• FinalBurn Neo (arcade) — separate non-commercial license\n• SDL2 (controller input) — zlib\n\nGame Center is not an official product of Sony, Nintendo, Sega, SNK, Capcom or any other game company. The installer does not include any commercial games or BIOS files."
+  "help.license_text": "Game Center is free software: it is not sold, has no ads and no paid features.\nGame Center uses the following open-source components, each under its own license:\n• RetroArch — GPLv3\n• Beetle PSX HW (PS1) — GPLv2\n• LRPS2 (PS2) — GPLv3\n• Gambatte (GB/GBC) — GPLv2\n• mGBA (GBA) — MPL 2.0\n• Snes9x (SNES) — separate non-commercial license\n• Genesis Plus GX (Mega Drive) — separate non-commercial license\n• FCEUmm (NES) — GPLv2\n• FinalBurn Neo (arcade) — separate non-commercial license\n• SDL2 (controller input) — zlib\n\nGame Center is not an official product of Sony, Nintendo, Sega, SNK, Capcom or any other game company. The installer does not include any commercial games or BIOS files.",
+
+  "android.exit_again": "Press again to quit...",
+  "android.empty_text": "Copy your games into this folder (connect the device to a computer with a USB cable), then tap \"Scan\":\n\n{0}",
+  "android.arcade_coin": "Arcade machines need a coin before you can play:\n• Insert coin: press SELECT\n• Start: press START\nWhen you run out of credits, insert a coin and press START to continue.",
+  "android.unsupported": "This game cannot be played on Android yet."
 }

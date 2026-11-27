@@ -4,3 +4,6 @@ publish/
 *.user
 .vs/
 .cache/
+
+# Game thử nghiệm chép vào để kiểm tra bản Android (không đưa lên repo)
+/Game/

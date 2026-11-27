@@ -263,5 +263,10 @@
   "help.about_title": "Giới thiệu",
   "help.about_text": "Game Center phiên bản {0}\nTác giả: {1}  ·  {2}",
   "help.license_title": "Giấy phép",
-  "help.license_text": "Game Center là phần mềm miễn phí: không bán, không quảng cáo, không có tính năng trả phí.\nGame Center dùng các thành phần nguồn mở sau, mỗi thành phần giữ giấy phép riêng:\n• RetroArch — GPLv3\n• Beetle PSX HW (PS1) — GPLv2\n• LRPS2 (PS2) — GPLv3\n• Gambatte (GB/GBC) — GPLv2\n• mGBA (GBA) — MPL 2.0\n• Snes9x (SNES) — giấy phép phi thương mại riêng\n• Genesis Plus GX (Mega Drive) — giấy phép phi thương mại riêng\n• FCEUmm (NES) — GPLv2\n• FinalBurn Neo (máy thùng) — giấy phép phi thương mại riêng\n• SDL2 (đọc tay cầm) — zlib\n\nGame Center không phải sản phẩm chính thức của Sony, Nintendo, Sega, SNK, Capcom hay hãng game nào khác. Bộ cài không kèm game hay BIOS thương mại."
+  "help.license_text": "Game Center là phần mềm miễn phí: không bán, không quảng cáo, không có tính năng trả phí.\nGame Center dùng các thành phần nguồn mở sau, mỗi thành phần giữ giấy phép riêng:\n• RetroArch — GPLv3\n• Beetle PSX HW (PS1) — GPLv2\n• LRPS2 (PS2) — GPLv3\n• Gambatte (GB/GBC) — GPLv2\n• mGBA (GBA) — MPL 2.0\n• Snes9x (SNES) — giấy phép phi thương mại riêng\n• Genesis Plus GX (Mega Drive) — giấy phép phi thương mại riêng\n• FCEUmm (NES) — GPLv2\n• FinalBurn Neo (máy thùng) — giấy phép phi thương mại riêng\n• SDL2 (đọc tay cầm) — zlib\n\nGame Center không phải sản phẩm chính thức của Sony, Nintendo, Sega, SNK, Capcom hay hãng game nào khác. Bộ cài không kèm game hay BIOS thương mại.",
+
+  "android.exit_again": "Nhấn lại để thoát...",
+  "android.empty_text": "Chép game vào thư mục này (cắm máy vào máy tính bằng cáp USB), rồi bấm \"Quét\":\n\n{0}",
+  "android.arcade_coin": "Máy thùng phải bỏ xu rồi mới chơi được:\n• Bỏ xu: bấm SELECT\n• Bắt đầu: bấm START\nHết lượt chơi thì bỏ xu rồi bấm START để chơi tiếp.",
+  "android.unsupported": "Game này chưa chơi được trên Android."
 }
