@@ -1,5 +1,5 @@
 {
-  "_note": "Core đã chọn và kiểm tra license: xem Licenses/Core-LICENSES. Tên .dll khớp bản buildbot libretro (RetroArch 1.22.2). disc = game chạy từ đĩa. Arcade: nhận theo danh sách FBNeo (src/GameCenter.Core/Arcade), không theo đuôi file.",
+  "_note": "Core đã chọn và kiểm tra license: xem Licenses/Core-LICENSES. Tên .dll khớp bản buildbot libretro (RetroArch 1.22.2). disc = game chạy từ đĩa. PSP: nhận theo nội dung đĩa (không theo đuôi file, vì .iso / .cso trùng với PS2); desktop = false: bản máy tính chưa đóng kèm core PPSSPP. Arcade: nhận theo danh sách FBNeo (src/GameCenter.Core/Arcade), không theo đuôi file.",
   "platforms": [
     {
       "name": "NES",
@@ -70,6 +70,7 @@
       "displayName": "PS1",
       "folders": ["PS1", "PSX", "PlayStation"],
       "core": "mednafen_psx_hw_libretro.dll",
+      "androidCore": "pcsx_rearmed_libretro.dll",
       "extensions": [".cue", ".bin", ".pbp", ".chd", ".ccd", ".m3u"],
       "disc": true,
       "enabled": true,
@@ -84,14 +85,28 @@
       "displayName": "PS2",
       "folders": ["PS2", "PlayStation2", "PlayStation 2"],
       "core": "pcsx2_libretro.dll",
+      "androidCore": "play_libretro.dll",
+      "analog": true,
       "extensions": [".iso", ".chd", ".cso", ".zso", ".cue", ".bin", ".img", ".mdf", ".nrg", ".m3u"],
       "disc": true,
       "enabled": true,
       "bios": {
         "detect": "ps2",
         "required": true,
+        "requiredOnAndroid": false,
         "note": "LRPS2 cần BIOS PS2 thật, tìm trong <system>/pcsx2/bios (mọi file 4–8 MB có bảng ROMDIR). Game Center tự chép BIOS người dùng để ở BIOS/ hoặc BIOS/PS2/ sang đó."
       }
+    },
+    {
+      "name": "PSP",
+      "displayName": "PSP",
+      "folders": ["PSP", "PlayStation Portable"],
+      "core": "ppsspp_libretro.dll",
+      "extensions": [],
+      "disc": true,
+      "enabled": true,
+      "desktop": false,
+      "analog": true
     },
     {
       "name": "Arcade",

@@ -236,6 +236,41 @@ bash tools/package-macos.sh arm64 1.22.2      # hoặc x86_64
 
 Thiết kế chi tiết: [GAME_CENTER_IMPLEMENTATION.md](GAME_CENTER_IMPLEMENTATION.md).
 
+## Bản Android (thử nghiệm)
+
+Nhánh này có thêm bản Android đang thử nghiệm, **chưa phát hành**. Khác bản máy tính, bản Android không dùng RetroArch: core giả lập nằm sẵn trong APK và chạy ngay trong app bằng [LibretroDroid](https://github.com/Swordfish90/LibretroDroid), nên vẫn là "cài là chơi".
+
+| Hệ máy | Core trên Android | Tình trạng |
+|---|---|---|
+| NES, SNES, Game Boy / Color, Mega Drive, Master System, Game Gear | như bản máy tính | Đã đóng gói, chưa thử với game thật |
+| GBA | mGBA | Đã chạy trên máy thật |
+| PS1 | PCSX ReARMed (thay Beetle PSX HW, vì app chỉ có OpenGL ES) | Đã chạy trên máy thật, không cần BIOS |
+| Máy thùng | FinalBurn Neo | Đã chạy trên máy thật |
+| PS2 | Play! (tự giả lập BIOS, không cần file BIOS) | **Thử nghiệm.** Lên hình và chạy, nhưng rất chậm: đo với một game được 15-25% tốc độ máy thật trên Galaxy Note 9, 60-79% trên máy ảo x86_64 chạy bằng máy tính. App ghi rõ "thử nghiệm" và báo trước khi chơi. Không có "lưu chỗ đang chơi", chỉ có save thẻ nhớ trong game |
+| PSP | PPSSPP | Đã chạy trên máy thật (một game), kể cả lưu và chơi tiếp chỗ đang chơi; tốc độ và độ tương thích từng game chưa đánh giá. Chỉ có trên Android |
+
+Đã có: tự nhận game, tìm kiếm không dấu, yêu thích, chơi gần đây, đổi tên, chọn hệ máy, ghép đĩa bằng tay, khôi phục save cũ, sao lưu save, tiếng Việt / tiếng Anh, nút cảm ứng (dọc và ngang) riêng cho từng hệ máy (NES 2 nút, SNES có L / R, Mega Drive A B C X Y Z, máy thùng có nút COIN...) kèm cần analog ảo cho PS2 / PSP, nút ẩn nút cảm ứng và tốc độ game ×1 / ×2 / ×3, tự giải nén game đĩa nằm trong file zip, dùng lại save của giả lập khác (thẻ nhớ PS1 .mcr / .mcd / .gme / .vmp, file .sav / .srm của máy băng, save PSP của PPSSPP), nhớ đĩa đang dùng của game nhiều đĩa, điều khiển bằng tay cầm cả ở màn hình chính, thoát game bấm 2 lần, hỏi lưu chỗ đang chơi, menu trong game (đổi đĩa, thoát).
+
+Thư mục game mặc định nằm trong `Android/data/com.khuongdoan.gamecenter/files/Games`. Trong **Cài đặt** có nút chuyển sang thư mục `GameCenter` ngay ở bộ nhớ trong (dễ chép game hơn; cần bật quyền truy cập file khi Android hỏi), game và save đang có được chuyển theo.
+
+Chưa có: ảnh bìa. Chưa thử: tay cầm thật (mới thử bằng phím giả lập), Android TV.
+
+Build (Windows, cần .NET 10 SDK + workload `android`, Android SDK + NDK, JDK 17):
+
+```
+cd android; ./gradlew :player:dist; cd ..      # màn hình chơi game (Kotlin) → android/dist/*.aar
+./tools/fetch-android-cores.ps1                # tải core libretro bản Android
+dotnet build src/GameCenter.Android -c Debug -t:Install
+```
+
+| Thư mục | Nội dung |
+|---|---|
+| `src/GameCenter.Android` | Giao diện Avalonia cho Android, dùng lại `GameCenter.Core` |
+| `android/player` | Màn hình chơi game (Kotlin + LibretroDroid): chạy core, nút cảm ứng, ghi save, menu trong game |
+| `tools/fetch-android-cores.ps1` | Tải core từ buildbot libretro vào `src/GameCenter.Android/cores/` |
+
+`GameCenter.Android` chưa nằm trong `GameCenter.sln`, nên `dotnet test` và CI hiện tại không cần workload Android. Vì dùng LibretroDroid (GPL-3.0), bản Android phát hành theo GPL-3.0: xem `Licenses/Android/`.
+
 ## Giấy phép
 
 Game Center miễn phí, không quảng cáo, không tính năng trả phí. RetroArch và các core giữ giấy phép riêng (xem `Licenses/`). Snes9x, Genesis Plus GX và FinalBurn Neo chỉ cho phép phân phối phi thương mại. Game Center không phải sản phẩm chính thức của Sony, Nintendo, Sega, SNK, Capcom hay hãng game nào khác. Không kèm game hay BIOS.

@@ -1,0 +1,6 @@
+PCSX ReARMed (core libretro giả lập PlayStation, dùng trong bản Android của Game Center)
+Mã nguồn: https://github.com/libretro/pcsx_rearmed
+Giấy phép: GNU General Public License phiên bản 2 (GPL-2.0) hoặc mới hơn
+
+Game Center cho Android đóng kèm bản build của libretro (https://buildbot.libretro.com/), không sửa đổi.
+Nguyên văn giấy phép GPL-2.0: xem file fceumm.txt trong cùng thư mục (cùng nội dung).

@@ -25,7 +25,9 @@ public sealed class AppPaths
     public string RetroArchDir => Path.GetDirectoryName(RetroArchExe)!;
     /// <summary>Thư mục info/assets/autoconfig đi kèm RetroArch (null trên macOS: nằm trong RetroArch.app).</summary>
     public string? RetroArchResourceDir => OsPlatform.RetroArchResourceDir(EmulatorsDir, Os);
-    public string CoresDir => OsPlatform.CoresDir(EmulatorsDir, Os);
+    /// <summary>Android: core nằm trong thư mục thư viện native của app (APK), do app truyền vào.</summary>
+    public string? CoresDirOverride { get; init; }
+    public string CoresDir => CoresDirOverride ?? OsPlatform.CoresDir(EmulatorsDir, Os);
     public string CorePath(string coreInCatalog) => Path.Combine(CoresDir, OsPlatform.CoreFileName(coreInCatalog, Os));
     public string DefaultsDir => Path.Combine(AppDir, "Defaults");
     public string PlatformsJson => Path.Combine(DefaultsDir, "platforms.json");

@@ -173,7 +173,7 @@ public sealed class SaveGuard
     }
 
     /// <summary>File save chính: SRAM / thẻ nhớ 1 (.srm) hoặc thẻ nhớ kiểu Mednafen (.mcr).</summary>
-    private static bool IsMainSave(string file) =>
+    public static bool IsMainSave(string file) =>
         Path.GetExtension(file).ToLowerInvariant() is ".srm" or ".mcr" or ".sav";
 
     // ------------------------------------------------------------------ Sao lưu tự động / khôi phục

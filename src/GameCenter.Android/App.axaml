@@ -1,0 +1,14 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="GameCenter.Droid.App"
+             RequestedThemeVariant="Dark">
+  <Application.Styles>
+    <!-- Màu nhấn của Game Center (cùng màu nút Chơi) thay cho màu nhấn của máy, để mục đang chọn và nút chính cùng một màu -->
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <ColorPaletteResources x:Key="Dark" Accent="#2E8BFF" />
+        <ColorPaletteResources x:Key="Light" Accent="#2E8BFF" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
+  </Application.Styles>
+</Application>

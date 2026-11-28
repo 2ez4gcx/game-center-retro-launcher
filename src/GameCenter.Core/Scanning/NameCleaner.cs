@@ -22,8 +22,16 @@ public static partial class NameCleaner
         var s = Brackets().Replace(fileNameOrTitle, "");
         s = s.Replace('_', ' ');
         s = Spaces().Replace(s, " ").Trim(' ', '-', '.', ',');
+        s = TrailingArticle().Replace(s, "${article} ${name}${rest}");
         return string.IsNullOrWhiteSpace(s) ? fileNameOrTitle.Trim() : s;
     }
+
+    /// <summary>
+    /// Tên kiểu danh mục (No-Intro / Redump) để mạo từ ở cuối: "Legend of Dragoon, The" → "The Legend of Dragoon",
+    /// "Legend of Zelda, The - A Link to the Past" → "The Legend of Zelda - A Link to the Past".
+    /// </summary>
+    [GeneratedRegex(@"^(?<name>[^,]+), (?<article>The|A|An)(?<rest>\s+-\s+.*)?$")]
+    private static partial Regex TrailingArticle();
 
     /// <summary>Tên file không có extension, đã bỏ phần "Disc N" để ghép các đĩa cùng game.</summary>
     public static string StripDisc(string name)

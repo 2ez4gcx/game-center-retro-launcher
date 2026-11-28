@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace GameCenter.Core.Config;
 
-public enum Os { Windows, MacOS, Linux }
+public enum Os { Windows, MacOS, Linux, Android }
 
 /// <summary>
 /// Khác biệt giữa Windows / macOS / Linux: vị trí RetroArch, đuôi file core,
@@ -13,7 +13,14 @@ public static class OsPlatform
 {
     public static Os Current =>
         OperatingSystem.IsWindows() ? Os.Windows :
-        OperatingSystem.IsMacOS() ? Os.MacOS : Os.Linux;
+        OperatingSystem.IsMacOS() ? Os.MacOS :
+        OperatingSystem.IsAndroid() ? Os.Android : Os.Linux;
+
+    /// <summary>
+    /// Android: không có RetroArch đi kèm. Core nằm sẵn trong APK và chạy ngay trong app (LibretroDroid),
+    /// xem <see cref="GameCenter.Core.Emulation.EmulatorLauncher.PlanEmbedded"/>.
+    /// </summary>
+    public static bool UsesEmbeddedCores(Os os) => os == Os.Android;
 
     /// <summary>File chạy RetroArch, tính từ thư mục Emulators.</summary>
     public static string RetroArchExe(string emulatorsDir, Os os) => os switch
@@ -40,9 +47,14 @@ public static class OsPlatform
         _ => ".so",
     };
 
-    /// <summary>Tên core trong platforms.json ghi dạng Windows ("x_libretro.dll"); đổi sang đuôi của hệ hiện tại.</summary>
+    /// <summary>
+    /// Tên core trong platforms.json ghi dạng Windows ("x_libretro.dll"); đổi sang tên file của hệ hiện tại.
+    /// Android: bản buildbot tên "x_libretro_android.so"; đóng trong APK phải có tiền tố "lib" thì Android mới giải nén.
+    /// </summary>
     public static string CoreFileName(string core, Os os) =>
-        Path.GetFileNameWithoutExtension(core) + CoreExtension(os);
+        os == Os.Android
+            ? "lib" + Path.GetFileNameWithoutExtension(core) + "_android.so"
+            : Path.GetFileNameWithoutExtension(core) + CoreExtension(os);
 
     /// <summary>Driver tay cầm cho RetroArch (null: để RetroArch tự chọn).</summary>
     public static string? JoypadDriver(Os os) => os switch

@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Game Center cho Android. Giao diện Avalonia dùng lại GameCenter.Core; game chạy ngay trong app bằng core libretro
+    đóng sẵn trong APK (LibretroDroid, GPL-3.0), không cần RetroArch.
+    Trước khi build:
+      1. cd android; ./gradlew :player:dist        (màn hình chơi game viết bằng Kotlin, ra android/dist/*.aar)
+      2. ./tools/fetch-android-cores.ps1           (tải core vào src/GameCenter.Android/cores/<abi>/)
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Không đặt namespace là GameCenter.Android: sẽ che mất namespace Android của hệ điều hành -->
+    <RootNamespace>GameCenter.Droid</RootNamespace>
+    <AssemblyName>GameCenter.Droid</AssemblyName>
+    <ApplicationId>com.khuongdoan.gamecenter</ApplicationId>
+    <ApplicationTitle>Game Center</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>0.3.0</ApplicationDisplayVersion>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <!-- arm64: điện thoại, TV box. x64: máy ảo Android trên máy tính -->
+    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Android" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <!-- Bản mới hơn bản Avalonia / Microsoft.Data.Sqlite kéo theo: thư viện native căn theo trang nhớ 16 KB
+         (máy Android đời mới dùng trang 16 KB không nạp được thư viện căn 4 KB) -->
+    <PackageReference Include="SkiaSharp" Version="3.119.4" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Android" Version="3.119.4" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.14" />
+  </ItemGroup>
+
+  <!-- Button, Orientation... của Android trùng tên với Avalonia -->
+  <ItemGroup>
+    <Using Remove="Android.Widget" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GameCenter.Core\GameCenter.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Màn hình chơi game (Kotlin) và LibretroDroid: chỉ đóng gói, không sinh binding C#; mở bằng Intent -->
+  <ItemGroup>
+    <AndroidLibrary Include="..\..\android\dist\*.aar" Bind="false" />
+  </ItemGroup>
+
+  <!-- Core libretro: lib<tên>_libretro_android.so, Android giải nén vào thư mục thư viện native của app -->
+  <ItemGroup>
+    <AndroidNativeLibrary Include="cores\arm64-v8a\*.so" Abi="arm64-v8a" />
+    <AndroidNativeLibrary Include="cores\x86_64\*.so" Abi="x86_64" />
+  </ItemGroup>
+
+  <!-- Defaults/ và Licenses/ nằm trong APK (assets), chép ra thư mục riêng của app lúc khởi động -->
+  <ItemGroup>
+    <AndroidAsset Include="..\..\Defaults\**\*" Link="Assets\Defaults\%(RecursiveDir)%(Filename)%(Extension)" />
+    <AndroidAsset Include="..\..\Licenses\**\*" Link="Assets\Licenses\%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Tài nguyên core cần trong thư mục hệ thống (PPSSPP: phông chữ, flash0...), tải bằng tools/fetch-android-cores.ps1 -->
+    <AndroidAsset Include="system\**\*" Link="Assets\System\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

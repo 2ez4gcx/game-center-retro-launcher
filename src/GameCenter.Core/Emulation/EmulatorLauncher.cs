@@ -27,6 +27,9 @@ public enum LaunchProblem
 /// <param name="Warning">Chạy được nhưng nên hỏi người chơi trước (ví dụ bộ ROM game thùng khác phiên bản).</param>
 public sealed record LaunchPlan(LaunchProblem Problem, string Message, ProcessStartInfo? StartInfo = null, string? Warning = null);
 
+/// <summary>Kết quả kiểm tra trước khi chơi trên Android (core chạy trong app): core và file game cần mở.</summary>
+public sealed record EmbeddedPlan(LaunchProblem Problem, string Message, string? CorePath = null, string? LaunchFile = null, string? Warning = null);
+
 /// <summary>Chọn core, tạo command line và khởi chạy RetroArch (mục 10).</summary>
 public sealed class EmulatorLauncher
 {
@@ -85,6 +88,38 @@ public sealed class EmulatorLauncher
         // Ổ chứa save sắp đầy: save trong game / chỗ đang chơi có thể không ghi được → hỏi trước
         if (LowDiskWarning(_paths.SavesDir) is { } disk) warning = warning == null ? disk : warning + "\n\n" + disk;
         return new(LaunchProblem.None, "", BuildRetroArchStartInfo(core, game.LaunchFile), warning);
+    }
+
+    /// <summary>
+    /// Android: core nằm trong APK và chạy ngay trong app, không có RetroArch. Kiểm tra giống <see cref="Plan"/>
+    /// (file game, hệ máy, core, BIOS, bộ ROM game thùng) rồi trả về core và file cần mở; app tự mở màn hình chơi.
+    /// </summary>
+    public EmbeddedPlan PlanEmbedded(GameRecord game)
+    {
+        if (game.ScanStatus == ScanStatus.BrokenCue)
+            return new(LaunchProblem.BrokenCue, Loc.T("launch.broken", game.ScanMessage));
+        if (!File.Exists(GameScanner.PhysicalPath(game.LaunchFile)))
+            return new(LaunchProblem.GameFileMissing, Loc.T("launch.file_missing"));
+
+        var platform = _catalog.Get(game.Platform);
+        if (platform == null)
+            return new(LaunchProblem.UnknownPlatform, Loc.T("launch.unknown_platform"));
+        if (!platform.Android)
+            return new(LaunchProblem.UnknownPlatform, Loc.T("android.unsupported"));
+
+        var core = _paths.CorePath(platform.CoreFor(_paths.Os));
+        if (!File.Exists(core))
+            return new(LaunchProblem.CoreMissing, Loc.T("launch.core_missing", platform.Label, Path.GetFileName(core)));
+
+        try { BiosChecker.Prepare(platform, _paths.BiosDir); }
+        catch (Exception ex) { Log.Error($"Không chuẩn bị được BIOS {platform.Name}", ex); }
+        if (platform.BiosRequiredFor(_paths.Os) && BiosChecker.Check(platform, _paths.BiosDir) == BiosState.Missing)
+            return new(LaunchProblem.BiosMissing, BiosMissingMessage(platform));
+
+        string? warning = null;
+        if (platform.Name == ArcadeDatabase.Platform && CheckArcade(game.LaunchFile, out warning) is { } problem)
+            return new(problem.Problem, problem.Message);
+        return new(LaunchProblem.None, "", core, game.LaunchFile, warning);
     }
 
     /// <summary>Dưới mức này thì cảnh báo: chỗ đang chơi của PS2 vài chục MB, thẻ nhớ PS2 8 MB, cộng bản sao lưu.</summary>

@@ -234,6 +234,41 @@ bash tools/package-macos.sh arm64 1.22.2      # or x86_64
 
 Detailed design (Vietnamese): [GAME_CENTER_IMPLEMENTATION.md](GAME_CENTER_IMPLEMENTATION.md).
 
+## Android version (experimental)
+
+This branch adds an experimental Android version that has **not been released**. Unlike the desktop version it does not use RetroArch: the emulator cores are inside the APK and run in the app itself through [LibretroDroid](https://github.com/Swordfish90/LibretroDroid), so it is still "install and play".
+
+| Console | Core on Android | Status |
+|---|---|---|
+| NES, SNES, Game Boy / Color, Mega Drive, Master System, Game Gear | same as desktop | Packaged, not yet tried with real games |
+| GBA | mGBA | Runs on a real device |
+| PS1 | PCSX ReARMed (instead of Beetle PSX HW, because the app only has OpenGL ES) | Runs on a real device, no BIOS needed |
+| Arcade | FinalBurn Neo | Runs on a real device |
+| PS2 | Play! (emulates the BIOS itself, no BIOS file needed) | **Experimental.** Shows a picture and runs, but very slowly: one game measured at 15-25% of real speed on a Galaxy Note 9 and 60-79% on an x86_64 emulator running on a PC. The app labels it "experimental" and warns before playing. No "save my place", only in-game memory card saves |
+| PSP | PPSSPP | Runs on a real device (one game), including saving and resuming your place; speed and per-game compatibility not evaluated. Android only |
+
+Done: automatic game detection, accent-insensitive search, favorites, recently played, rename, choose console, manual disc merging, restoring older saves, save backup, Vietnamese / English, touch buttons (portrait and landscape) tailored to each console (2 buttons for NES, L / R for SNES, A B C X Y Z for Mega Drive, a COIN button for arcade...) with a virtual analog stick for PS2 / PSP, a hide-buttons toggle and a ×1 / ×2 / ×3 game speed button, built-in extraction of disc games stored in zip files, reusing saves from other emulators (PS1 memory cards .mcr / .mcd / .gme / .vmp, cartridge .sav / .srm files, PPSSPP saves for PSP), remembering the current disc of multi-disc games, controller support on the main screen too, press-twice-to-quit, "save my place" on exit, in-game menu (change disc, quit).
+
+By default the games folder lives in `Android/data/com.khuongdoan.gamecenter/files/Games`. **Settings** has a button to switch to a `GameCenter` folder right in internal storage (easier to copy games into; requires turning on file access when Android asks); existing games and saves are moved along.
+
+Missing: cover pictures. Not tried: a physical controller (only simulated key presses so far), Android TV.
+
+Build (Windows; needs the .NET 10 SDK with the `android` workload, the Android SDK + NDK, and JDK 17):
+
+```
+cd android; ./gradlew :player:dist; cd ..      # game screen (Kotlin) → android/dist/*.aar
+./tools/fetch-android-cores.ps1                # download the Android libretro cores
+dotnet build src/GameCenter.Android -c Debug -t:Install
+```
+
+| Folder | Contents |
+|---|---|
+| `src/GameCenter.Android` | Avalonia UI for Android, reusing `GameCenter.Core` |
+| `android/player` | Game screen (Kotlin + LibretroDroid): runs the core, touch buttons, saving, in-game menu |
+| `tools/fetch-android-cores.ps1` | Downloads the cores from the libretro buildbot into `src/GameCenter.Android/cores/` |
+
+`GameCenter.Android` is not in `GameCenter.sln` yet, so `dotnet test` and the current CI do not need the Android workload. Because it uses LibretroDroid (GPL-3.0), the Android version is released under GPL-3.0: see `Licenses/Android/`.
+
 ## License
 
 Game Center is free, with no ads and no paid features. RetroArch and each core keep their own licenses (see `Licenses/`). Snes9x, Genesis Plus GX and FinalBurn Neo only allow non-commercial distribution. Game Center is not an official product of Sony, Nintendo, Sega, SNK, Capcom or any other game company. No games or BIOS files are included.

@@ -104,6 +104,35 @@ jobs:
           name: macos-${{ matrix.arch }}
           path: publish/macos/*.dmg
 
+  # Bản Android (thử nghiệm): chỉ build khi chạy tay (Actions → build → Run workflow), không nằm trong Release.
+  # APK ký bằng khóa debug, dùng để cài thử.
+  android:
+    if: github.event_name == 'workflow_dispatch'
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: "10.0.x" }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - run: dotnet workload install android
+      # Gradle tự cài NDK nhưng không tự cài CMake (lỗi CXX1300), nên cài trước đúng bản player/build.gradle.kts cần
+      - name: CMake cho NDK
+        shell: pwsh
+        run: '& "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.bat" "cmake;3.31.6"'
+      - name: Màn hình chơi game (Kotlin)
+        shell: pwsh
+        working-directory: android
+        run: ./gradlew.bat --no-daemon :player:dist
+      - name: Core libretro
+        shell: pwsh
+        run: ./tools/fetch-android-cores.ps1 -Abis arm64-v8a
+      - name: APK
+        run: dotnet build src/GameCenter.Android -c Release -p:RuntimeIdentifier=android-arm64
+      - uses: actions/upload-artifact@v4
+        with: { name: android, path: src/GameCenter.Android/bin/Release/net10.0-android/android-arm64/*-Signed.apk }
+
   release:
     needs: [windows, installer-test, linux, macos]
     if: startsWith(github.ref, 'refs/tags/v')
