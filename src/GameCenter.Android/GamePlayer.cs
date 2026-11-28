@@ -70,6 +70,7 @@ public sealed class GamePlayer
         intent.PutExtra("variables", CoreVariables());
         intent.PutExtra("env", CoreEnvironment(plan.CorePath!, paths.SavesDir));
         intent.PutExtra("analog", App.Catalog.Get(game.Platform)?.Analog == true);
+        intent.PutExtra("psSymbols", game.Platform is "PS1" or "PS2" or "PSP");
         intent.PutExtra("textExitAgain", Loc.T("android.exit_again"));
         intent.PutExtra("textLoading", Loc.T("android.loading"));
         intent.PutExtra("title", game.Name);

@@ -55,6 +55,7 @@ class GameActivity : ComponentActivity() {
         const val EXTRA_VARIABLES = "variables"       // tùy chọn core, mỗi phần tử "khóa=giá trị"
         const val EXTRA_ENV = "env"                   // biến môi trường cho core, mỗi phần tử "TÊN=giá trị"
         const val EXTRA_ANALOG = "analog"             // true: hiện cần analog ảo (PS2, PSP)
+        const val EXTRA_PS_SYMBOLS = "psSymbols"      // true: 4 nút bấm vẽ tam giác, vuông, tròn, chéo (PS1, PS2, PSP)
         const val EXTRA_TEXT_EXIT_AGAIN = "textExitAgain"
         const val EXTRA_TEXT_LOADING = "textLoading"
         const val EXTRA_TITLE = "title"                       // tên game, làm tiêu đề menu
@@ -145,11 +146,12 @@ class GameActivity : ComponentActivity() {
         touchPad = TouchPadView(
             this,
             analog = intent.getBooleanExtra(EXTRA_ANALOG, false),
+            psSymbols = intent.getBooleanExtra(EXTRA_PS_SYMBOLS, false),
             onKey = { keyCode, down ->
-                if (keyCode == KeyEvent.KEYCODE_MENU) {
-                    if (down) showMenu()
-                } else {
-                    retroView.sendKeyEvent(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, keyCode)
+                when (keyCode) {
+                    KeyEvent.KEYCODE_MENU -> if (down) showMenu()
+                    KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> if (down) toggleFastForward()
+                    else -> retroView.sendKeyEvent(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, keyCode)
                 }
             },
             onAnalog = { x, y -> retroView.sendMotionEvent(GLRetroView.MOTION_SOURCE_ANALOG_LEFT, x, y) },
@@ -205,6 +207,14 @@ class GameActivity : ComponentActivity() {
             }
         }
         handler.postDelayed(sramTick, SRAM_INTERVAL_MS)
+    }
+
+    /** Nút ×2 trên màn hình: bật / tắt chạy nhanh gấp đôi (qua đoạn hội thoại, đoạn đi bộ dài). */
+    private fun toggleFastForward() {
+        if (!gameStarted) return
+        val fast = retroView.frameSpeed <= 1
+        retroView.frameSpeed = if (fast) 2 else 1
+        touchPad.fastForward = fast
     }
 
     // ---------------------------------------------------------------- Save

@@ -105,7 +105,7 @@ jobs:
           path: publish/macos/*.dmg
 
   # Bản Android (thử nghiệm): chỉ build khi chạy tay (Actions → build → Run workflow), không nằm trong Release.
-  # APK ký bằng khóa debug, dùng để cài thử. CHƯA chạy thử job này trên GitHub lần nào.
+  # APK ký bằng khóa debug, dùng để cài thử.
   android:
     if: github.event_name == 'workflow_dispatch'
     needs: test
@@ -117,6 +117,10 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "17" }
       - run: dotnet workload install android
+      # Gradle tự cài NDK nhưng không tự cài CMake (lỗi CXX1300), nên cài trước đúng bản player/build.gradle.kts cần
+      - name: CMake cho NDK
+        shell: pwsh
+        run: '& "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.bat" "cmake;3.31.6"'
       - name: Màn hình chơi game (Kotlin)
         shell: pwsh
         working-directory: android
