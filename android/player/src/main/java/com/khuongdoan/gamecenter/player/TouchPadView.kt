@@ -92,17 +92,17 @@ class TouchPadView(
     var speed = 1
         set(value) { field = value; invalidate() }
 
-    // Nút mờ khoảng 30% để không che hình game: nền tối và viền trắng đều 30%; chữ và ký hiệu đậm hơn một chút
-    // (55%) để còn đọc được trên cảnh sáng. Nút đang bấm tô màu nhấn của app.
+    // Nút mờ khoảng 30% để không che hình game: nền tối và viền trắng đều 30%; chữ và ký hiệu cũng 30%
+    // theo yêu cầu của tác giả. Nút đang bấm tô màu nhấn của app.
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x4D101418 }
     private val fillDown = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x992E8BFF.toInt() }
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x4DFFFFFF; style = Paint.Style.STROKE }
-    private val shape = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x8CFFFFFF.toInt(); style = Paint.Style.FILL }
+    private val shape = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x4DFFFFFF; style = Paint.Style.FILL }
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0x8CFFFFFF.toInt(); style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
+        color = 0x4DFFFFFF; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
     }
-    private val knob = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x66FFFFFF }
-    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x8CFFFFFF.toInt(); textAlign = Paint.Align.CENTER; isFakeBoldText = true }
+    private val knob = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x4DFFFFFF }
+    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x4DFFFFFF; textAlign = Paint.Align.CENTER; isFakeBoldText = true }
     private val path = Path()
     private val rect = RectF()
 
