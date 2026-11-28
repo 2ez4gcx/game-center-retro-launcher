@@ -79,6 +79,8 @@ public partial class App : Avalonia.Application
         Paths.EnsureDataFolders();
         Log.Init(Paths.LogFile);
         InstallSystemAssets(context);
+        // Dung lượng trống của bộ nhớ chứa game (DriveInfo trên Android chỉ thấy phân vùng gốc)
+        GameCenter.Core.Scanning.DiscArchive.FreeSpaceProbe = dir => new global::Android.OS.StatFs(dir).AvailableBytes;
         Log.Info($"Khởi động Android. AppDir={Paths.AppDir} DataDir={Paths.DataDir} Cores={Paths.CoresDir}");
 
         bool hadSettings = File.Exists(Paths.SettingsJson);

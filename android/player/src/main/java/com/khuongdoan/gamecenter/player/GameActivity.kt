@@ -15,6 +15,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.FrameLayout
@@ -50,6 +51,7 @@ class GameActivity : ComponentActivity() {
         const val EXTRA_SAVES_DIR = "savesDir"        // thư mục core tự ghi file (thẻ nhớ PS2...)
         const val EXTRA_SRAM_FILE = "sramFile"        // save trong game: <tên game>.srm
         const val EXTRA_STATE_FILE = "stateFile"      // chỗ đang chơi: <tên game>.state.auto
+        const val EXTRA_DISC_FILE = "discFile"        // game nhiều đĩa: file ghi số thứ tự đĩa đang dùng (0 là đĩa 1)
         const val EXTRA_LOAD_STATE = "loadState"      // true: "Chơi tiếp" từ stateFile
         const val EXTRA_SAVE_STATE_ON_EXIT = "saveStateOnExit"
         const val EXTRA_VARIABLES = "variables"       // tùy chọn core, mỗi phần tử "khóa=giá trị"
@@ -80,6 +82,7 @@ class GameActivity : ComponentActivity() {
 
     private var sramFile: File? = null
     private var stateFile: File? = null
+    private var discFile: File? = null
     private var lastSram: ByteArray? = null
     private var gameStarted = false
     private var pendingLoadState = false
@@ -90,6 +93,8 @@ class GameActivity : ComponentActivity() {
     private var thumbLDown = false
     private var thumbRDown = false
     private var menu: AlertDialog? = null
+    private var speed = 1          // tốc độ game người chơi chọn (1, 2, 3)
+    private var pauseDepth = 0     // số hộp thoại đang mở; lớn hơn 0 thì game đang dừng
 
     private val sramTick = object : Runnable {
         override fun run() {
@@ -109,6 +114,7 @@ class GameActivity : ComponentActivity() {
         }
         sramFile = intent.getStringExtra(EXTRA_SRAM_FILE)?.let(::File)
         stateFile = intent.getStringExtra(EXTRA_STATE_FILE)?.let(::File)
+        discFile = intent.getStringExtra(EXTRA_DISC_FILE)?.let(::File)
         pendingLoadState = intent.getBooleanExtra(EXTRA_LOAD_STATE, false) && stateFile?.isFile == true
 
         // Một số core đọc đường dẫn từ biến môi trường thay vì hỏi frontend (Play! ghi dữ liệu vào $EXTERNAL_STORAGE,
@@ -198,6 +204,7 @@ class GameActivity : ComponentActivity() {
         gameStarted = true
         loading?.let { (it.parent as? ViewGroup)?.removeView(it) }
         loading = null
+        restoreDisc()
         if (pendingLoadState) {
             pendingLoadState = false
             try {
@@ -213,9 +220,9 @@ class GameActivity : ComponentActivity() {
     /** Nút tốc độ trên màn hình: mỗi lần chạm tăng một bậc ×1, ×2, ×3 rồi quay lại ×1. */
     private fun nextSpeed() {
         if (!gameStarted) return
-        val next = if (retroView.frameSpeed >= MAX_SPEED) 1 else retroView.frameSpeed + 1
-        retroView.frameSpeed = next
-        touchPad.speed = next
+        speed = if (speed >= MAX_SPEED) 1 else speed + 1
+        retroView.frameSpeed = speed
+        touchPad.speed = speed
     }
 
     // ---------------------------------------------------------------- Save
@@ -271,34 +278,81 @@ class GameActivity : ComponentActivity() {
             labels += text(EXTRA_TEXT_MENU_DISC, "Đổi đĩa"); actions += { showDiscMenu(disks) }
         }
         labels += text(EXTRA_TEXT_MENU_EXIT, "Thoát game"); actions += { exitGame() }
-        menu = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-            .setTitle(intent.getStringExtra(EXTRA_TITLE))
-            .setItems(labels.toTypedArray()) { _, which -> actions[which]() }
-            .setOnDismissListener { hideSystemBars(); retroView.requestFocus() }
-            .show()
+        menu = showGameDialog(
+            AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                .setTitle(intent.getStringExtra(EXTRA_TITLE))
+                .setItems(labels.toTypedArray()) { _, which -> actions[which]() }
+        )
     }
 
     private fun showDiscMenu(disks: Int) {
         val current = try { retroView.getCurrentDisk() } catch (e: Exception) { -1 }
         val pattern = text(EXTRA_TEXT_DISC, "Đĩa {0}")
         val labels = Array(disks) { i -> pattern.replace("{0}", (i + 1).toString()) + if (i == current) "  ✓" else "" }
-        menu = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+        val builder = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
             .setTitle(text(EXTRA_TEXT_MENU_DISC, "Đổi đĩa"))
             .setItems(labels) { _, which ->
                 if (which != current) {
                     try {
                         retroView.changeDisk(which)
+                        rememberDisc(which)
                         Log.i(TAG, "Đổi sang đĩa ${which + 1}/$disks")
                     } catch (e: Exception) {
                         Log.e(TAG, "Không đổi được đĩa", e)
                     }
                 }
             }
-            .setOnDismissListener { hideSystemBars(); retroView.requestFocus() }
-            .show()
+        menu = showGameDialog(builder)
+    }
+
+    /**
+     * Hiện hộp thoại trong lúc chơi: game dừng lại cho tới khi hộp thoại đóng (người chơi không bị mất mạng trong lúc
+     * đọc menu), và thanh điều hướng của máy không bật lên che mất một phần màn hình.
+     */
+    private fun showGameDialog(builder: AlertDialog.Builder): AlertDialog {
+        pauseDepth++
+        retroView.frameSpeed = 0
+        val dialog = builder.setOnDismissListener {
+            if (--pauseDepth <= 0) { pauseDepth = 0; retroView.frameSpeed = speed }
+            hideSystemBars()
+            retroView.requestFocus()
+        }.create()
+        // Cửa sổ không nhận tiêu điểm trong lúc hiện ra thì Android không bật lại thanh hệ thống; hiện xong mới cho nhận
+        dialog.window?.setFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+        dialog.show()
+        dialog.window?.let { w ->
+            WindowInsetsControllerCompat(w, w.decorView).apply {
+                hide(WindowInsetsCompat.Type.systemBars())
+                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+            w.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+        }
+        return dialog
     }
 
     private fun text(extra: String, fallback: String) = intent.getStringExtra(extra) ?: fallback
+
+    /**
+     * Game nhiều đĩa: mở lại đúng đĩa đang chơi dở lần trước (như bản máy tính), thay vì luôn bắt đầu ở đĩa 1 rồi bắt
+     * người chơi tự đổi. Phải làm trước khi nạp "chỗ đang chơi": chỗ đó được chụp lúc đĩa này đang nằm trong máy.
+     */
+    private fun restoreDisc() {
+        val file = discFile?.takeIf { it.isFile } ?: return
+        try {
+            val index = file.readText().trim().toIntOrNull() ?: return
+            if (index <= 0 || index >= retroView.getAvailableDisks() || index == retroView.getCurrentDisk()) return
+            retroView.changeDisk(index)
+            Log.i(TAG, "Mở lại ở đĩa ${index + 1}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Không mở lại được đĩa lần trước", e)
+        }
+    }
+
+    /** Ghi ngay khi đổi đĩa (không đợi lúc thoát): app có thể bị Android tắt bất cứ lúc nào. */
+    private fun rememberDisc(index: Int) {
+        val file = discFile ?: return
+        try { writeAtomic(file, index.toString().toByteArray()) } catch (e: Exception) { Log.e(TAG, "Không ghi được đĩa đang dùng", e) }
+    }
 
     // ---------------------------------------------------------------- Thoát game
 

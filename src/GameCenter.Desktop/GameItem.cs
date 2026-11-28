@@ -85,7 +85,9 @@ public sealed class GameItem : INotifyPropertyChanged
 
     public bool HasWarning => Warning != null;
     public string FavoriteIcon => Record.IsFavorite ? "★" : "☆";
-    public string PlayLabel => Loc.T(IsUnknown ? "game.choose_platform" : "game.play");
+    /// <summary>Game đĩa còn nằm trong file .zip (theo thông báo lúc quét): nút bấm là "Giải nén", không phải "Chọn hệ máy".</summary>
+    public bool IsDiscZip => IsUnknown && Record.ScanMessage == Loc.T("scan.zip_disc");
+    public string PlayLabel => Loc.T(IsDiscZip ? "extract.yes" : IsUnknown ? "game.choose_platform" : "game.play");
 
     private Bitmap? _cover;
     private bool _coverLoaded;

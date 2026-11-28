@@ -94,4 +94,69 @@ public class AndroidTests
         Assert.True(psp.Analog);
         Assert.Equal("libppsspp_libretro_android.so", OsPlatform.CoreFileName(psp.CoreFor(Os.Android), Os.Android));
     }
+
+    [Theory]
+    [InlineData("Legend of Dragoon, The (USA)", "The Legend of Dragoon")]
+    [InlineData("Legend of Zelda, The - A Link to the Past (USA)", "The Legend of Zelda - A Link to the Past")]
+    [InlineData("Bug's Life, A (Europe)", "A Bug's Life")]
+    [InlineData("Tekken 6", "Tekken 6")]
+    [InlineData("Ready, Steady, Go", "Ready, Steady, Go")]
+    public void NameCleaner_MovesTrailingArticleToFront(string file, string expected) =>
+        Assert.Equal(expected, GameCenter.Core.Scanning.NameCleaner.Clean(file));
+
+    private static string DiscZip(TestEnv env, string rel, string disc)
+    {
+        var zip = Path.Combine(env.Paths.GamesDir, rel);
+        Directory.CreateDirectory(Path.GetDirectoryName(zip)!);
+        using var archive = System.IO.Compression.ZipFile.Open(zip, System.IO.Compression.ZipArchiveMode.Create);
+        using (var w = new StreamWriter(archive.CreateEntry(disc + ".cue").Open()))
+        {
+            w.WriteLine($"FILE \"{disc}.bin\" BINARY");
+            w.WriteLine("  TRACK 01 MODE2/2352");
+            w.WriteLine("    INDEX 01 00:00:00");
+        }
+        using (var b = archive.CreateEntry(disc + ".bin").Open())
+            b.Write(new byte[2352 * 20]);
+        return zip;
+    }
+
+    [Fact]
+    public void DiscZip_ExtractedNextToZip_BecomesOneMultiDiscGame_AndZipIsNoLongerReported()
+    {
+        using var env = new TestEnv();
+        var zips = Enumerable.Range(1, 2).Select(n => DiscZip(env, $"E2E Quest (USA) (Disc {n}).zip", $"E2E Quest (USA) (Disc {n})")).ToList();
+
+        // Chưa giải nén: mỗi file zip là một mục "chưa nhận ra", và được nhận là zip chứa game đĩa
+        var before = env.Scan();
+        Assert.Equal(2, before.Count(g => g.Status == GameCenter.Core.Scanning.ScanStatus.Unknown));
+        Assert.All(zips, z => Assert.True(GameCenter.Core.Scanning.DiscArchive.IsDiscZip(z)));
+        Assert.False(GameCenter.Core.Scanning.DiscArchive.IsExtracted(zips[0]));
+        Assert.True(GameCenter.Core.Scanning.DiscArchive.RequiredBytes(zips) > 2352 * 40);
+
+        long reported = 0;
+        foreach (var z in zips) GameCenter.Core.Scanning.DiscArchive.Extract(z, done => reported = done);
+        Assert.True(reported > 2352 * 20);
+        Assert.All(zips, z => Assert.True(GameCenter.Core.Scanning.DiscArchive.IsExtracted(z)));
+        Assert.Empty(Directory.GetFiles(env.Paths.GamesDir, "*.part"));
+        Assert.Equal(0, GameCenter.Core.Scanning.DiscArchive.RequiredBytes(zips));
+
+        // Sau khi giải nén: một game 2 đĩa, file zip gốc còn nguyên nhưng không còn bị báo
+        var db = new GameDatabase(env.Paths.DatabaseFile);
+        db.Initialize(env.Catalog);
+        db.ApplyScan(env.Scan());
+        var game = Assert.Single(db.GetGames());
+        Assert.Equal("PS1", game.Platform);
+        Assert.Equal(2, game.DiscCount);
+        Assert.All(zips, z => Assert.True(File.Exists(z)));
+    }
+
+    [Fact]
+    public void DiscZip_RomZipIsNotADiscZip()
+    {
+        using var env = new TestEnv();
+        var zip = Path.Combine(env.Paths.GamesDir, "rom.zip");
+        using (var archive = System.IO.Compression.ZipFile.Open(zip, System.IO.Compression.ZipArchiveMode.Create))
+        using (var s = archive.CreateEntry("game.gba").Open()) s.Write(new byte[64]);
+        Assert.False(GameCenter.Core.Scanning.DiscArchive.IsDiscZip(zip));
+    }
 }

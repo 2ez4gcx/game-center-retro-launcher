@@ -114,7 +114,7 @@ public sealed class MainView : UserControl
         ScrollViewer.SetHorizontalScrollBarVisibility(_tabs, ScrollBarVisibility.Hidden);
         ScrollViewer.SetVerticalScrollBarVisibility(_tabs, ScrollBarVisibility.Disabled);
         _tabs.ItemTemplate = new FuncDataTemplate<Tab>((t, _) =>
-            new TextBlock { Text = t?.Label, FontSize = 20, Margin = new Thickness(10, 8) });
+            new TextBlock { Text = t?.Label, FontSize = 20, LineHeight = 28, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 8) });
         _tabs.SelectionChanged += (_, _) =>
         {
             if (_tabs.SelectedItem is Tab t && t.Key != _tab) { _tab = t.Key; ShowGames(); }
@@ -262,7 +262,9 @@ public sealed class MainView : UserControl
         title.Children.Add(new TextBlock { Text = g.Name, FontSize = 22, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap });
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         text.Children.Add(title);
-        text.Children.Add(new TextBlock { Text = PlatformLabel(g), FontSize = 16, Foreground = Dim, Margin = new Thickness(0, 4, 0, 0) });
+        // Game nhiều đĩa ghi rõ số đĩa: người chơi biết cả bộ đã được ghép thành một game
+        var sub = PlatformLabel(g) + (g.DiscCount >= 2 ? "  ·  " + Loc.T("game.discs", g.DiscCount) : "");
+        text.Children.Add(new TextBlock { Text = sub, FontSize = 16, Foreground = Dim, Margin = new Thickness(0, 4, 0, 0) });
         grid.Children.Add(text);
 
         var more = new Button
@@ -384,6 +386,69 @@ public sealed class MainView : UserControl
             _scanning = false;
             Reload();
         }
+        await OfferExtract(onlyNew: true);
+    }
+
+    // ------------------------------------------------------------------ Giải nén game đĩa trong zip
+
+    /// <summary>File zip chứa game đĩa đã hỏi trong lần mở app này (người chơi chọn "Để sau" thì không hỏi lại mãi).</summary>
+    private readonly HashSet<string> _extractAsked = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Game đĩa (PS1 / PS2 / PSP) còn nằm trong file .zip: đề nghị giải nén giúp, tất cả trong một lần (game nhiều đĩa
+    /// thường là mỗi đĩa một file zip). Tự giải nén trên điện thoại là việc khó với người không rành máy.
+    /// </summary>
+    private async Task OfferExtract(bool onlyNew)
+    {
+        if (_playing || _scanning || _overlay.IsVisible) return;
+        var zips = await Task.Run(() => _all.Where(g => !IsPlayable(g)).Select(g => g.SourceFile).Distinct()
+            .Where(f => (!onlyNew || !_extractAsked.Contains(f)) && DiscArchive.IsDiscZip(f)).OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList());
+        if (zips.Count == 0) return;
+        foreach (var z in zips) _extractAsked.Add(z);
+
+        string need = DiscArchive.Mb(await Task.Run(() => DiscArchive.RequiredBytes(zips)));
+        string offer = zips.Count == 1 ? Loc.T("extract.offer_one", Path.GetFileName(zips[0]), need) : Loc.T("extract.offer_many", zips.Count, need);
+        if (!await Confirm(Loc.T("extract.title"), offer, Loc.T("extract.yes"), Loc.T("extract.no"), true)) return;
+
+        _scanning = true;   // chặn quét và chơi game trong lúc giải nén
+        string? error = null;
+        MainActivity.Instance?.Window?.AddFlags(global::Android.Views.WindowManagerFlags.KeepScreenOn);
+        try
+        {
+            for (int i = 0; i < zips.Count; i++)
+            {
+                string name = Path.GetFileName(zips[i]);
+                long total = Math.Max(1, DiscArchive.RequiredBytes(new[] { zips[i] }));
+                int index = i, shown = -1;
+                ShowBusy(Loc.T("extract.working", index + 1, zips.Count, name, 0));
+                try
+                {
+                    await Task.Run(() => DiscArchive.Extract(zips[index], done =>
+                    {
+                        int percent = (int)Math.Min(100, done * 100 / total);
+                        if (percent == shown) return;
+                        shown = percent;
+                        Dispatcher.UIThread.Post(() => ShowBusy(Loc.T("extract.working", index + 1, zips.Count, name, percent)));
+                    }));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Không giải nén được {zips[i]}", ex);
+                    error = Loc.T("extract.failed", name, ex.Message);
+                    break;
+                }
+            }
+        }
+        finally
+        {
+            // Lệnh ShowBusy gửi từ luồng giải nén có thể còn nằm trong hàng đợi: đóng lớp phủ sau chúng
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            HideBusy();
+            MainActivity.Instance?.Window?.ClearFlags(global::Android.Views.WindowManagerFlags.KeepScreenOn);
+            _scanning = false;
+        }
+        await RescanAsync();
+        await Info(Loc.T("extract.title"), error ?? Loc.T("extract.done"));
     }
 
     // ------------------------------------------------------------------ Chơi
@@ -395,6 +460,7 @@ public sealed class MainView : UserControl
         if (!IsPlayable(game))
         {
             var platform = App.Catalog.Get(game.Platform);
+            if (platform == null && DiscArchive.IsDiscZip(game.SourceFile)) { await OfferExtract(onlyNew: false); return; }
             await Info(game.Name, platform is { Android: false } ? Loc.T("android.unsupported") : game.ScanMessage ?? Loc.T("launch.unknown_platform"));
             return;
         }
@@ -551,6 +617,7 @@ public sealed class MainView : UserControl
         }
         Add(Loc.T("help.play_title"), Loc.T("android.help_play", Friendly(App.Paths.GamesDir)));
         Add(Loc.T("help.exit_title"), Loc.T("android.help_exit"));
+        Add(Loc.T("android.help_touch_title"), Loc.T("android.help_touch"));
         Add(Loc.T("help.pad_title"), Loc.T("android.help_pad"));
         Add(Loc.T("help.disc_title"), Loc.T("android.help_disc"));
         Add(Loc.T("help.arcade_title"), Loc.T("android.help_arcade") + "\n\n" + Loc.T("android.arcade_coin"));
@@ -774,6 +841,9 @@ public sealed class MainView : UserControl
         return i == 1 && value.Length > 0 ? value : null;
     }
 
+    private static bool CanScroll(ScrollViewer scroll, bool down) =>
+        down ? scroll.Offset.Y < scroll.Extent.Height - scroll.Viewport.Height - 1 : scroll.Offset.Y > 1;
+
     /// <summary>
     /// Hộp thoại chung. Nút cuối là nút chính (màu xanh) khi xếp ngang; xếp dọc thì mọi nút như nhau.
     /// <paramref name="cancelIndex"/>: nút được coi là đã bấm khi người dùng bấm Back (null: bắt buộc phải chọn).
@@ -787,12 +857,17 @@ public sealed class MainView : UserControl
             _overlay.IsVisible = false;
             _overlay.Children.Clear();
             done.TrySetResult(answer);
+            // Đóng hộp thoại thì tiêu điểm mất theo nút vừa bấm: đưa về danh sách game, nếu không phím hướng / nút A
+            // của tay cầm không còn tác dụng. Làm sau cùng, khi bên gọi đã kịp mở hộp thoại kế tiếp (nếu có).
+            Dispatcher.UIThread.Post(() => { if (!_overlay.IsVisible) FocusList(); }, DispatcherPriority.Background);
         }
         _cancelDialog = cancelIndex is { } c ? () => Close(c) : null;
 
-        var body = new StackPanel();
-        body.Children.Add(new TextBlock { Text = title, FontSize = 24, FontWeight = FontWeight.Bold, TextWrapping = TextWrapping.Wrap });
-        var middle = new StackPanel { Spacing = 14, Margin = new Thickness(0, 14, 0, 0) };
+        // Ba hàng: tiêu đề, phần giữa cuộn được (chiếm phần còn lại), hàng nút. Dùng Grid chứ không dùng StackPanel:
+        // StackPanel không giới hạn chiều cao, trên màn hình thấp (điện thoại xoay ngang) hàng nút bị đẩy ra ngoài hộp.
+        var body = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto") };
+        body.Children.Add(new TextBlock { Text = title, FontSize = 24, FontWeight = FontWeight.Bold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 14) });
+        var middle = new StackPanel { Spacing = 14 };
         if (!string.IsNullOrEmpty(text)) middle.Children.Add(new TextBlock { Text = text, FontSize = 20, TextWrapping = TextWrapping.Wrap });
         if (content != null) middle.Children.Add(content);
 
@@ -818,14 +893,42 @@ public sealed class MainView : UserControl
         }
         if (vertical) middle.Children.Add(buttonPanel);
         // Phần giữa cuộn được khi dài (nhiều lựa chọn, máy màn hình thấp); nút xếp ngang luôn nằm ngoài vùng cuộn
-        body.Children.Add(new ScrollViewer { MaxHeight = Math.Max(240, Bounds.Height - 260), Content = middle });
-        if (!vertical) body.Children.Add(buttonPanel);
+        var scroll = new ScrollViewer { Content = middle };
+        Grid.SetRow(scroll, 1); body.Children.Add(scroll);
+        if (!vertical) { Grid.SetRow(buttonPanel, 2); body.Children.Add(buttonPanel); }
 
-        _overlay.Children.Add(new Border
+        bool low = Bounds.Height < 480;
+        var box = new Border
         {
-            Background = Panel, CornerRadius = new CornerRadius(14), Padding = new Thickness(24), Margin = new Thickness(20), MaxWidth = 680,
+            Background = Panel, CornerRadius = new CornerRadius(14), Padding = new Thickness(24, low ? 16 : 24), Margin = new Thickness(20, low ? 8 : 20), MaxWidth = 680,
             HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Child = body,
-        });
+        };
+        // Phím hướng lên / xuống (tay cầm, điều khiển TV): chuyển sang nút kế tiếp nếu nó đang nằm trong vùng nhìn thấy,
+        // không thì cuộn nội dung một đoạn. Nhờ vậy đọc được hết phần chữ dài (Trợ giúp) mà không cần chạm màn hình.
+        box.AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (e.Key is not (Key.Up or Key.Down) || e.Source is TextBox) return;
+            bool down = e.Key == Key.Down;
+            e.Handled = true;
+            var current = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() as Control;
+            var next = current == null ? null
+                : KeyboardNavigationHandler.GetNext(current, down ? NavigationDirection.Next : NavigationDirection.Previous) as Control;
+            if (next != null && current != null && box.IsVisualAncestorOf(next))
+            {
+                double from = current.TranslatePoint(default, box)?.Y ?? 0;
+                double to = next.TranslatePoint(default, box)?.Y ?? 0;
+                bool forward = down ? to >= from : to <= from;
+                // Nút trong vùng cuộn mà còn khuất: cuộn tới trước đã, lần bấm sau mới chuyển tiêu điểm
+                bool visible = true;
+                if (scroll.IsVisualAncestorOf(next) && next.TranslatePoint(default, scroll) is { } at)
+                    visible = at.Y >= -1 && at.Y + next.Bounds.Height <= scroll.Viewport.Height + 1;
+                if (forward && visible) { next.Focus(NavigationMethod.Directional); return; }
+                if (forward && !CanScroll(scroll, down)) { next.Focus(NavigationMethod.Directional); next.BringIntoView(); return; }
+            }
+            if (CanScroll(scroll, down))
+                scroll.Offset = scroll.Offset.WithY(Math.Clamp(scroll.Offset.Y + (down ? 1 : -1) * Math.Max(80, scroll.Viewport.Height * 0.6), 0, scroll.Extent.Height - scroll.Viewport.Height));
+        }, RoutingStrategies.Tunnel);
+        _overlay.Children.Add(box);
         _overlay.IsVisible = true;
         (primary ?? buttonPanel.Children.OfType<Button>().FirstOrDefault())?.Focus();
         return done.Task;

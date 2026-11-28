@@ -273,6 +273,7 @@ public partial class MainWindow : Window
     {
         if (_scanning) { _rescanPending = true; return; }
         _scanning = true;
+        bool offerExtract = false;
         StatusText.Text = Loc.T("main.scanning");
         // Quét tự động không khóa giao diện
         if (!silent) IsEnabled = false;
@@ -295,6 +296,7 @@ public partial class MainWindow : Window
                 if (summary.Unknown > 0) msg += Loc.T("scan.unknown", summary.Unknown);
                 if (summary.Broken > 0) msg += Loc.T("scan.broken", summary.Broken);
                 await Dialogs.Info(this, Loc.T("scan.done_title"), msg);
+                offerExtract = true;
             }
         }
         catch (Exception ex)
@@ -309,6 +311,69 @@ public partial class MainWindow : Window
             if (!silent) { IsEnabled = true; GameList.Focus(); }
             if (_rescanPending && !_gameRunning) { _rescanPending = false; RequestRescan(); }
         }
+        if (offerExtract) await OfferExtractAsync(onlyNew: true);
+    }
+
+    // ------------------------------------------------------------------ Giải nén game đĩa trong zip
+
+    /// <summary>File zip chứa game đĩa đã hỏi trong lần mở app này (chọn "Để sau" thì không hỏi lại sau mỗi lần quét).</summary>
+    private readonly HashSet<string> _extractAsked = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Game đĩa (PS1 / PS2) còn nằm trong file .zip: đề nghị giải nén giúp, tất cả trong một lần (game nhiều đĩa thường là
+    /// mỗi đĩa một file zip). Giải nén ra ngay cạnh file zip; file zip gốc giữ nguyên.
+    /// </summary>
+    private async Task OfferExtractAsync(bool onlyNew)
+    {
+        if (_gameRunning || _scanning) return;
+        var candidates = _all.Where(g => g.IsUnknown).Select(g => g.Record.SourceFile).Distinct().ToList();
+        var zips = await Task.Run(() => candidates
+            .Where(f => (!onlyNew || !_extractAsked.Contains(f)) && DiscArchive.IsDiscZip(f))
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList());
+        if (zips.Count == 0) return;
+        foreach (var z in zips) _extractAsked.Add(z);
+
+        string need = DiscArchive.Mb(await Task.Run(() => DiscArchive.RequiredBytes(zips)));
+        string offer = zips.Count == 1 ? Loc.T("extract.offer_one", Path.GetFileName(zips[0]), need) : Loc.T("extract.offer_many", zips.Count, need);
+        if (!await Dialogs.Confirm(this, Loc.T("extract.title"), offer, yes: Loc.T("extract.yes"), no: Loc.T("extract.no"))) return;
+
+        _scanning = true;   // chặn quét và chơi game trong lúc giải nén
+        IsEnabled = false;
+        string? error = null;
+        try
+        {
+            for (int i = 0; i < zips.Count; i++)
+            {
+                string name = Path.GetFileName(zips[i]);
+                long total = Math.Max(1, DiscArchive.RequiredBytes(new[] { zips[i] }));
+                int index = i, shown = -1;
+                StatusText.Text = Loc.T("extract.status", index + 1, zips.Count, name, 0);
+                try
+                {
+                    await Task.Run(() => DiscArchive.Extract(zips[index], done =>
+                    {
+                        int percent = (int)Math.Min(100, done * 100 / total);
+                        if (percent == shown) return;
+                        shown = percent;
+                        Dispatcher.UIThread.Post(() => StatusText.Text = Loc.T("extract.status", index + 1, zips.Count, name, percent));
+                    }));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Không giải nén được {zips[i]}", ex);
+                    error = Loc.T("extract.failed", name, ex.Message);
+                    break;
+                }
+            }
+        }
+        finally
+        {
+            _scanning = false;
+            IsEnabled = true;
+        }
+        await ScanAsync(silent: true);
+        await Dialogs.Info(this, Loc.T("extract.title"), error ?? Loc.T("extract.done"));
+        GameList.Focus();
     }
 
     // ------------------------------------------------------------------ Chơi
@@ -331,6 +396,8 @@ public partial class MainWindow : Window
     private async Task PlayAsync(GameItem item)
     {
         if (_gameRunning) return;
+        // Game đĩa còn nằm trong file .zip: giải nén giúp, thay vì hỏi "game này của máy nào" (chọn máy cũng không chạy được)
+        if (item.IsUnknown && await Task.Run(() => DiscArchive.IsDiscZip(item.Record.SourceFile))) { await OfferExtractAsync(onlyNew: false); return; }
         if (item.IsUnknown) { await ChoosePlatform(item); return; }
 
         var launcher = new EmulatorLauncher(App.Paths, App.Catalog, App.Settings);

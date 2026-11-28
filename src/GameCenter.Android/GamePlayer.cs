@@ -66,6 +66,8 @@ public sealed class GamePlayer
         if (sramFile != null) intent.PutExtra("sramFile", sramFile);
         if (useStates) intent.PutExtra("stateFile", stateFile);
         intent.PutExtra("loadState", resume);
+        // Game nhiều đĩa: nhớ đĩa đang dùng, cạnh thẻ nhớ (bản máy tính: RetroArch tự ghi file .ldci cùng chỗ)
+        if (game.DiscCount > 1) intent.PutExtra("discFile", Path.Combine(saves.SavesDir, saves.ContentName + ".disc"));
         intent.PutExtra("saveStateOnExit", useStates);
         intent.PutExtra("variables", CoreVariables());
         intent.PutExtra("env", CoreEnvironment(plan.CorePath!, paths.SavesDir));

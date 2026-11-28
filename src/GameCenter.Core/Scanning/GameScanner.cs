@@ -792,6 +792,11 @@ public sealed class GameScanner
                 MarkUnknown(single, Loc.T("scan.zip_encrypted"));
                 return new() { single };
             }
+            // Game đĩa trong zip đã được giải nén ra ngay cạnh (bằng tay hoặc bằng nút "Giải nén" của Game Center):
+            // game đã được nhận từ các file đó, không báo "phải giải nén" cho file zip nữa.
+            if (entries.Any(e => DiscExtensions.Contains(Path.GetExtension(e.Name)))
+                && DiscArchive.IsExtracted(Path.GetDirectoryName(Path.GetFullPath(zip))!, entries))
+                return new();
 
             // Bộ ROM game thùng: phải xét trước vì chip ROM hay có đuôi .bin / .rom (sẽ bị tách thành từng "ROM băng")
             if (ClassifyArcadeZip(zip, entries, hint) is { } arcade) return arcade;
