@@ -449,6 +449,9 @@ public partial class MainWindow : Window
             if (saves != null)
             {
                 guard.PrepareForLaunch(App.Db, item.Record, saves);
+                // Lần đầu chơi mà cạnh file game có save của giả lập khác (Game.gba + Game.sav): tự dùng save đó
+                if (SaveImporter.AutoImport(App.Paths, App.Catalog, App.Db.GetGames(includeMissing: true), item.Record) is { } imported)
+                    await Dialogs.Info(this, item.Name, Loc.T("import.auto", Path.GetFileName(imported)));
                 if (SaveGuard.AppendConfig(saves) is { } perGame)
                     appendConfigs.Add(WriteAppendConfig("save-dir.cfg", perGame));
             }
@@ -566,6 +569,7 @@ public partial class MainWindow : Window
             (Loc.T("more.choose_cover"), () => ChooseCover(item)),
             (Loc.T(item.Record.IsFavorite ? "more.unfavorite" : "more.favorite"), () => { ToggleFavorite(item); return Task.CompletedTask; }),
             (Loc.T("more.restore_save"), () => RestoreSave(item)),
+            (Loc.T("more.import_save"), () => ImportSave(item)),
         };
         if (App.Catalog.IsDiscPlatform(item.Record.Platform))
         {
@@ -614,6 +618,40 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Khôi phục save từ các bản sao lưu tự động (tạo mỗi lần trước khi chơi).</summary>
+    /// <summary>Dùng save trong game của giả lập khác (<see cref="SaveImporter"/>): chọn file, xác nhận, save cũ được sao lưu trước.</summary>
+    private async Task ImportSave(GameItem item)
+    {
+        string title = Loc.T("import.title");
+        if (!SaveImporter.Supports(item.Record.Platform)) { await Dialogs.Info(this, title, Loc.T("import.unsupported_platform")); return; }
+        try
+        {
+            var start = await StorageProvider.TryGetFolderFromPathAsync(item.Record.FolderPath);
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = Loc.T("import.pick", item.Name).Split('\n')[0],
+                AllowMultiple = false,
+                SuggestedStartLocation = start,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType("Save") { Patterns = new[] { "*.sav", "*.srm", "*.mcr", "*.mcd", "*.mc", "*.gme", "*.vmp", "*.mem", "*.vgs", "*.sa1" } },
+                    FilePickerFileTypes.All,
+                },
+            });
+            var file = files.FirstOrDefault()?.TryGetLocalPath();
+            if (file == null) return;
+            try { SaveImporter.Convert(item.Record.Platform, file); }
+            catch (InvalidDataException ex) { await Dialogs.Info(this, title, Loc.T("import.failed", ex.Message)); return; }
+            if (!await Dialogs.Confirm(this, title, Loc.T("import.confirm", Path.GetFileName(file), item.Name), yes: Loc.T("import.yes"), no: Loc.T("dialog.cancel"))) return;
+            SaveImporter.Import(App.Paths, App.Catalog, App.Db.GetGames(includeMissing: true), item.Record, file);
+            await Dialogs.Info(this, title, Loc.T("import.done"));
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Không nhập được save", ex);
+            await Dialogs.Info(this, title, Loc.T("import.failed", ex.Message));
+        }
+    }
+
     private async Task RestoreSave(GameItem item)
     {
         var guard = new SaveGuard(App.Paths);

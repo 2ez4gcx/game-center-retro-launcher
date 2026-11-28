@@ -39,6 +39,9 @@ public sealed class GamePlayer
         var guard = new SaveGuard(paths);
         var saves = guard.Locate(game, App.Db.GetGames(includeMissing: true), App.Catalog);
         guard.PrepareForLaunch(App.Db, game, saves);
+        // Lần đầu chơi mà cạnh file game có save của giả lập khác (Game.gba + Game.sav): tự dùng save đó
+        if (SaveImporter.AutoImport(paths, App.Catalog, App.Db.GetGames(includeMissing: true), game) is { } imported)
+            await Info(game.Name, Loc.T("import.auto", Path.GetFileName(imported)));
 
         // Chỗ đang chơi (save state): hỏi chơi tiếp hay chơi từ đầu, như bản máy tính
         // Play! (PS2) tự ghi thẻ nhớ vào thư mục Saves, không có .srm; và nó chụp "chỗ đang chơi" trong lúc luồng giả lập

@@ -496,6 +496,7 @@ public sealed class MainView : UserControl
             (Loc.T("more.rename"), () => Rename(game)),
             (Loc.T("more.choose_platform"), () => ChoosePlatform(game)),
             (Loc.T("more.restore_save"), () => RestoreSave(game)),
+            (Loc.T("more.import_save"), () => ImportSave(game)),
         };
         if (App.Catalog.IsDiscPlatform(game.Platform))
         {
@@ -505,6 +506,79 @@ public sealed class MainView : UserControl
         }
         int i = await Choose(game.Name, null, options.Select(o => o.Label).ToList());
         if (i >= 0) await options[i].Run();
+    }
+
+    /// <summary>
+    /// Dùng save trong game của giả lập khác (<see cref="SaveImporter"/>): file nằm cạnh game được gợi ý trước, không thì
+    /// mở trình chọn file của máy. PSP: chép thư mục save của PPSSPP.
+    /// </summary>
+    private async Task ImportSave(GameRecord game)
+    {
+        string title = Loc.T("import.title");
+        if (game.Platform == "PSP")
+        {
+            if (!Storage.HasAccess(global::Android.App.Application.Context)) { await Info(title, Loc.T("import.psp_no_access")); return; }
+            string source = Path.Combine(global::Android.OS.Environment.ExternalStorageDirectory!.AbsolutePath, "PSP", "SAVEDATA");
+            try
+            {
+                int copied = await Task.Run(() => SaveImporter.ImportPspSaves(source, Path.Combine(App.Paths.SavesDir, "PSP", "SAVEDATA")));
+                await Info(title, copied > 0 ? Loc.T("import.psp_done", copied) : Loc.T("import.psp_none", Friendly(source)));
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Không chép được save PSP", ex);
+                await Info(title, Loc.T("import.failed", ex.Message));
+            }
+            return;
+        }
+        if (!SaveImporter.Supports(game.Platform)) { await Info(title, Loc.T("import.unsupported_platform")); return; }
+
+        string? file = null;
+        string? shownName = null;
+        var sidecars = SaveImporter.FindSidecars(game);
+        if (sidecars.Count > 0)
+        {
+            var labels = sidecars.Select(f => Path.GetFileName(f)!).Append(Loc.T("import.pick_other")).ToList();
+            int i = await Choose(title, Loc.T("import.pick", game.Name), labels);
+            if (i < 0) return;
+            if (i < sidecars.Count) file = sidecars[i];
+        }
+        string? temp = null;
+        try
+        {
+            if (file == null)
+            {
+                var provider = TopLevel.GetTopLevel(this)?.StorageProvider;
+                if (provider == null) return;
+                var picked = await provider.OpenFilePickerAsync(new global::Avalonia.Platform.Storage.FilePickerOpenOptions
+                    { Title = title, AllowMultiple = false });
+                if (picked.Count == 0) return;
+                // Trình chọn file của Android trả về luồng dữ liệu, không phải đường dẫn: chép ra thư mục tạm của app
+                shownName = picked[0].Name;
+                var dir = Path.Combine(global::Android.App.Application.Context.CacheDir!.AbsolutePath, "import");
+                Directory.CreateDirectory(dir);
+                temp = Path.Combine(dir, shownName);
+                await using (var input = await picked[0].OpenReadAsync())
+                await using (var output = File.Create(temp))
+                    await input.CopyToAsync(output);
+                file = temp;
+            }
+            shownName ??= Path.GetFileName(file);
+            try { SaveImporter.Convert(game.Platform, file); }
+            catch (InvalidDataException ex) { await Info(title, Loc.T("import.failed", ex.Message)); return; }
+            if (!await Confirm(title, Loc.T("import.confirm", shownName, game.Name), Loc.T("import.yes"), Loc.T("dialog.cancel"), true)) return;
+            SaveImporter.Import(App.Paths, App.Catalog, App.Db.GetGames(includeMissing: true), game, file);
+            await Info(title, Loc.T("import.done"));
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Không nhập được save", ex);
+            await Info(title, Loc.T("import.failed", ex.Message));
+        }
+        finally
+        {
+            if (temp != null) { try { File.Delete(temp); } catch (Exception) { /* file tạm, xóa không được thì thôi */ } }
+        }
     }
 
     private void ToggleFavorite(GameRecord game)
@@ -883,7 +957,9 @@ public sealed class MainView : UserControl
             int index = i;
             var b = new Button
             {
-                Content = Plain(buttons[i]), FontSize = 20, Padding = new Thickness(22, 14),
+                // Chữ dài (tên file, câu lựa chọn) tự xuống dòng thay vì bị cắt cụt
+                Content = new TextBlock { Text = Plain(buttons[i]), FontSize = 20, TextWrapping = vertical ? TextWrapping.Wrap : TextWrapping.NoWrap },
+                Padding = new Thickness(22, 14),
                 HorizontalAlignment = vertical ? HorizontalAlignment.Stretch : HorizontalAlignment.Left,
                 HorizontalContentAlignment = vertical ? HorizontalAlignment.Left : HorizontalAlignment.Center,
             };
@@ -930,7 +1006,11 @@ public sealed class MainView : UserControl
         }, RoutingStrategies.Tunnel);
         _overlay.Children.Add(box);
         _overlay.IsVisible = true;
-        (primary ?? buttonPanel.Children.OfType<Button>().FirstOrDefault())?.Focus();
+        var first = primary ?? buttonPanel.Children.OfType<Button>().FirstOrDefault();
+        first?.Focus();
+        // Hộp thoại mở ngay sau khi hộp thoại khác đóng: lúc này nút chưa nằm trong cây hiển thị nên Focus() ở trên chưa
+        // có tác dụng (bấm A / Enter không chọn được gì). Đặt lại tiêu điểm sau khi đã dựng xong.
+        Dispatcher.UIThread.Post(() => { if (_overlay.IsVisible && box.IsVisualAncestorOf(first!) && !box.IsKeyboardFocusWithin) first?.Focus(); }, DispatcherPriority.Loaded);
         return done.Task;
     }
 }
