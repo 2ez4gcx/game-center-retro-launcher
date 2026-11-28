@@ -162,6 +162,8 @@ public static class RetroArchConfig
             ["beetle_psx_hw_use_mednafen_memcard0_method"] = "libretro",
             // PS2: thẻ nhớ dùng chung mọi game như máy thật (BIOS/pcsx2/memcards), không phụ thuộc tên file game
             ["pcsx2_shared_memory_cards"] = "enabled",
+            // PSP: dựng hình gấp 3 độ phân giải gốc (480x272 → 1440x816) cho nét trên màn hình máy tính
+            ["ppsspp_internal_resolution"] = "1440x816",
             // Game thùng: FBNeo mặc định giữ START là vào menu kỹ thuật của máy thùng (service menu) → dễ lạc vào khi
             // giữ START lâu hoặc lúc bấm START + SELECT để thoát. Tắt hẳn.
             ["fbneo-diagnostic-input"] = "None",

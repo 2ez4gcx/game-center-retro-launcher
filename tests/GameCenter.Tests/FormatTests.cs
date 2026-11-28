@@ -226,7 +226,7 @@ public class Ps2ScanTests
         Assert.Equal("PS2", g["God of War"].Platform);
         Assert.Equal(ScanStatus.Unknown, g["Crash"].Status);
         Assert.Contains(".iso", g["Crash"].Message);
-        Assert.Equal(ScanStatus.Unknown, g["Patapon"].Status);
+        Assert.Equal("PSP", g["Patapon"].Platform);   // PSP đã chơi được trên cả máy tính lẫn Android
         Assert.Equal("PS2", g["Okami"].Platform);
         Assert.Equal("PS2", g["Shadow of the Colossus"].Platform);
         Assert.Equal("PS1", g["Spyro"].Platform);

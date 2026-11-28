@@ -5,7 +5,7 @@
 ; Build: ISCC installer\GameCenter.iss   (sau khi chạy build.ps1)
 
 #define AppName "Game Center"
-#define AppVersion "0.3.0"
+#define AppVersion "0.4.0"
 #define PublishDir "..\publish\GameCenter"
 ; Cho phép build bản thử với AppId khác: ISCC /DTestBuild installer\GameCenter.iss
 #ifdef TestBuild
