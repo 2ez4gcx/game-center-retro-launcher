@@ -263,7 +263,8 @@ public sealed class MainView : UserControl
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         text.Children.Add(title);
         // Game nhiều đĩa ghi rõ số đĩa: người chơi biết cả bộ đã được ghép thành một game
-        var sub = PlatformLabel(g) + (g.DiscCount >= 2 ? "  ·  " + Loc.T("game.discs", g.DiscCount) : "");
+        var sub = PlatformLabel(g) + (g.DiscCount >= 2 ? "  ·  " + Loc.T("game.discs", g.DiscCount) : "")
+                  + (IsExperimental(g) ? "  ·  " + Loc.T("android.experimental") : "");
         text.Children.Add(new TextBlock { Text = sub, FontSize = 16, Foreground = Dim, Margin = new Thickness(0, 4, 0, 0) });
         grid.Children.Add(text);
 
@@ -292,6 +293,12 @@ public sealed class MainView : UserControl
 
     private static bool IsPlayable(GameRecord g) =>
         g.ScanStatus is ScanStatus.Ok or ScanStatus.BrokenCue && App.Catalog.Get(g.Platform) is { Android: true };
+
+    /// <summary>
+    /// Hệ máy chạy được nhưng chưa đạt trên Android. PS2 (core Play!): đo trên Galaxy Note 9 chỉ được 15-25% tốc độ máy
+    /// thật, trên máy ảo x86_64 chạy bằng máy tính cũng chỉ 60-79%; điểm nghẽn nằm trong core.
+    /// </summary>
+    private static bool IsExperimental(GameRecord g) => g.Platform == "PS2";
 
     private static string PlatformLabel(GameRecord g) =>
         App.Catalog.Get(g.Platform)?.Label ?? Loc.T("tab.unknown");
@@ -470,6 +477,10 @@ public sealed class MainView : UserControl
             // Game thùng: lần đầu chơi mỗi game nhắc bỏ xu (máy thùng phải bỏ xu rồi mới bấm START)
             if (game.Platform == ArcadeDatabase.Platform && game.PlayCount == 0)
                 await Info(Loc.T("help.arcade_dialog_title"), Loc.T("android.arcade_coin"));
+            // PS2: lần đầu chơi mỗi game nói trước là sẽ chậm, để người chơi không tưởng máy hay game bị hỏng
+            if (IsExperimental(game) && game.PlayCount == 0
+                && !await Confirm(Loc.T("android.ps2_title"), Loc.T("android.ps2_text"), Loc.T("android.ps2_try"), Loc.T("dialog.cancel"), true))
+                return;
             await new GamePlayer { Confirm = Confirm, Info = Info }.PlayAsync(activity, game);
         }
         catch (Exception ex)
@@ -695,6 +706,7 @@ public sealed class MainView : UserControl
         Add(Loc.T("help.pad_title"), Loc.T("android.help_pad"));
         Add(Loc.T("help.disc_title"), Loc.T("android.help_disc"));
         Add(Loc.T("help.arcade_title"), Loc.T("android.help_arcade") + "\n\n" + Loc.T("android.arcade_coin"));
+        Add(Loc.T("android.help_ps2_title"), Loc.T("android.ps2_text"));
         Add(Loc.T("help.bios_title"), Loc.T("android.help_bios", Friendly(App.Paths.BiosDir)));
         Add(Loc.T("help.errors_title"), Loc.T("android.help_errors", Friendly(App.Paths.LogFile)));
         Add(Loc.T("help.about_title"), Loc.T("help.about_text", AppVersion(), Author, Contact));
