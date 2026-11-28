@@ -54,6 +54,7 @@ Tải bản mới nhất ở mục [Releases](https://github.com/2ez4gcx/game-ce
 | Sega Mega Drive / Genesis | `.md`, `.gen`, `.smd`, `.bin`, `.zip` | Genesis Plus GX | Phi thương mại |
 | PS1 (PlayStation) | `.cue`, `.bin`, `.pbp`, `.chd`, `.ccd`, `.m3u` | Beetle PSX HW | GPLv2 |
 | **PS2** (PlayStation 2) | `.iso`, `.chd`, `.cso`, `.zso`, `.cue`/`.bin`, `.m3u` | LRPS2 | GPLv3 |
+| **PSP** (PlayStation Portable) | `.iso`, `.cso` | PPSSPP | GPLv2+ |
 | **Máy thùng** (arcade: Neo Geo, Capcom CPS1/2/3, PGM, Cave, Konami, Sega...) | `.zip`, `.7z` (bộ ROM FinalBurn Neo) | FinalBurn Neo | Phi thương mại |
 
 PS1 chơi được ngay không cần BIOS (OpenBIOS). Thêm BIOS bạn tự sao lưu vào thư mục `BIOS\` để tương thích tốt hơn.
@@ -247,7 +248,7 @@ Nhánh này có thêm bản Android đang thử nghiệm, **chưa phát hành**.
 | PS1 | PCSX ReARMed (thay Beetle PSX HW, vì app chỉ có OpenGL ES) | Đã chạy trên máy thật, không cần BIOS |
 | Máy thùng | FinalBurn Neo | Đã chạy trên máy thật |
 | PS2 | Play! (tự giả lập BIOS, không cần file BIOS) | **Thử nghiệm.** Lên hình và chạy, nhưng rất chậm: đo với một game được 15-25% tốc độ máy thật trên Galaxy Note 9, 60-79% trên máy ảo x86_64 chạy bằng máy tính. App ghi rõ "thử nghiệm" và báo trước khi chơi. Không có "lưu chỗ đang chơi", chỉ có save thẻ nhớ trong game |
-| PSP | PPSSPP | Đã chạy trên máy thật (một game), kể cả lưu và chơi tiếp chỗ đang chơi; tốc độ và độ tương thích từng game chưa đánh giá. Chỉ có trên Android |
+| PSP | PPSSPP | Đã chạy trên máy thật (một game), kể cả lưu và chơi tiếp chỗ đang chơi; tốc độ và độ tương thích từng game chưa đánh giá |
 
 Đã có: tự nhận game, tìm kiếm không dấu, yêu thích, chơi gần đây, đổi tên, chọn hệ máy, ghép đĩa bằng tay, khôi phục save cũ, sao lưu save, tiếng Việt / tiếng Anh, nút cảm ứng (dọc và ngang) riêng cho từng hệ máy (NES 2 nút, SNES có L / R, Mega Drive A B C X Y Z, máy thùng có nút COIN...) kèm cần analog ảo cho PS2 / PSP, nút ẩn nút cảm ứng và tốc độ game ×1 / ×2 / ×3, tự giải nén game đĩa nằm trong file zip, dùng lại save của giả lập khác (thẻ nhớ PS1 .mcr / .mcd / .gme / .vmp, file .sav / .srm của máy băng, save PSP của PPSSPP), nhớ đĩa đang dùng của game nhiều đĩa, điều khiển bằng tay cầm cả ở màn hình chính, thoát game bấm 2 lần, hỏi lưu chỗ đang chơi, menu trong game (đổi đĩa, thoát).
 

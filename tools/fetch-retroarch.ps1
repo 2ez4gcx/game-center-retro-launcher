@@ -28,6 +28,8 @@ $cores = [ordered]@{
     'gambatte'        = @{ License = 'https://raw.githubusercontent.com/libretro/gambatte-libretro/master/COPYING';  Name = 'gambatte' }
     # Máy thùng. Giấy phép phi thương mại, phải kèm nguyên văn; danh sách game: tools/update-fbneo-dat.ps1
     'fbneo'           = @{ License = 'https://raw.githubusercontent.com/libretro/FBNeo/master/src/license.txt';       Name = 'fbneo' }
+    # PSP. Cần thêm tài nguyên hệ thống (phông chữ...) ở Emulators/System/PPSSPP, xem bước 2b
+    'ppsspp'          = @{ License = 'https://raw.githubusercontent.com/hrydgard/ppsspp/master/LICENSE.TXT';          Name = 'ppsspp' }
 }
 
 $sevenZip = Get-Command 7z -ErrorAction SilentlyContinue
@@ -64,6 +66,16 @@ foreach ($core in $cores.Keys) {
     Expand-Archive $zip -DestinationPath (Join-Path $raDir 'cores') -Force
     Invoke-WebRequest $cores[$core].License -OutFile (Join-Path $licDir "Core-LICENSES/$($cores[$core].Name).txt") -UseBasicParsing
 }
+
+# 2b. Tài nguyên hệ thống của PPSSPP (phông chữ, dữ liệu): Game Center chép sang thư mục BIOS của người dùng khi chơi PSP
+$systemDir = Join-Path $OutDir 'Emulators/System'
+New-Item -ItemType Directory -Force $systemDir | Out-Null
+$ppssppZip = Join-Path $work 'PPSSPP.zip'
+Write-Host 'Tải PPSSPP.zip (tài nguyên hệ thống)'
+Invoke-WebRequest 'https://buildbot.libretro.com/assets/system/PPSSPP.zip' -OutFile $ppssppZip -UseBasicParsing
+if (Test-Path (Join-Path $systemDir 'PPSSPP')) { Remove-Item (Join-Path $systemDir 'PPSSPP') -Recurse -Force }
+Expand-Archive $ppssppZip -DestinationPath $systemDir -Force
+if (-not (Test-Path (Join-Path $systemDir 'PPSSPP/ppge_atlas.zim'))) { throw 'PPSSPP.zip không có PPSSPP/ppge_atlas.zim như mong đợi' }
 
 # 3. Kiểm tra: không có chương trình DuckStation (file chạy / thư viện).
 #    RetroArch tự kèm vài file mô tả có chữ "duckstation" (info/duckstation_libretro.info, shader .params) — không tính.

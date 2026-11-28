@@ -400,6 +400,8 @@ public partial class MainWindow : Window
         if (item.IsUnknown && await Task.Run(() => DiscArchive.IsDiscZip(item.Record.SourceFile))) { await OfferExtractAsync(onlyNew: false); return; }
         if (item.IsUnknown) { await ChoosePlatform(item); return; }
 
+        // PSP: PPSSPP cần phông chữ và dữ liệu của nó trong thư mục BIOS; chép từ bộ cài nếu chưa có
+        if (item.Record.Platform == "PSP") await Task.Run(() => SystemAssets.Install(App.Paths));
         var launcher = new EmulatorLauncher(App.Paths, App.Catalog, App.Settings);
         var plan = launcher.Plan(item.Record);
         if (plan.Problem != LaunchProblem.None)

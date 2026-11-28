@@ -18,8 +18,8 @@
     <AssemblyName>GameCenter.Droid</AssemblyName>
     <ApplicationId>com.khuongdoan.gamecenter</ApplicationId>
     <ApplicationTitle>Game Center</ApplicationTitle>
-    <ApplicationVersion>1</ApplicationVersion>
-    <ApplicationDisplayVersion>0.3.0</ApplicationDisplayVersion>
+    <ApplicationVersion>2</ApplicationVersion>
+    <ApplicationDisplayVersion>0.4.0</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <!-- arm64: điện thoại, TV box. x64: máy ảo Android trên máy tính -->
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>

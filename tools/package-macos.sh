@@ -26,7 +26,7 @@ APP="$OUT/Game Center.app"
 BIN="$APP/Contents/MacOS"
 EMU="$BIN/Emulators"
 WORK="$OUT/work-$ARCH"
-CORES=(mednafen_psx_hw pcsx2 snes9x mgba genesis_plus_gx fceumm gambatte fbneo)
+CORES=(mednafen_psx_hw pcsx2 snes9x mgba genesis_plus_gx fceumm gambatte fbneo ppsspp)
 
 rm -rf "$APP" "$WORK"
 mkdir -p "$BIN" "$APP/Contents/Resources" "$WORK"
@@ -56,6 +56,13 @@ for c in "${CORES[@]}"; do
     curl -fL "https://buildbot.libretro.com/nightly/apple/osx/$ARCH/latest/${c}_libretro.dylib.zip" -o "$WORK/$c.zip"
     unzip -o -q "$WORK/$c.zip" -d "$EMU/cores"
 done
+
+echo "==> Tài nguyên hệ thống của PPSSPP (PSP)"
+# Game Center chép sang thư mục BIOS của người dùng khi chơi PSP
+mkdir -p "$EMU/System"
+curl -fL "https://buildbot.libretro.com/assets/system/PPSSPP.zip" -o "$WORK/PPSSPP.zip"
+unzip -o -q "$WORK/PPSSPP.zip" -d "$EMU/System"
+test -f "$EMU/System/PPSSPP/ppge_atlas.zim"
 
 echo "==> Giấy phép"
 curl -fL "https://raw.githubusercontent.com/libretro/RetroArch/v$RA_VERSION/COPYING" -o "$BIN/Licenses/RetroArch-LICENSE.txt"

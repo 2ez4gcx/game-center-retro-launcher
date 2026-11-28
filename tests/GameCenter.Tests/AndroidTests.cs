@@ -75,7 +75,7 @@ public class AndroidTests
     }
 
     [Fact]
-    public void PspDisc_IsPlayableOnAndroid_AndStillUnsupportedOnDesktop()
+    public void PspDisc_IsPlayableOnAndroidAndDesktop()
     {
         using var env = new TestEnv();
         var iso = env.File("a/Patapon.iso", Fake.Disc(null, false, "PSP GAME"));
@@ -86,11 +86,12 @@ public class AndroidTests
         Assert.Equal(ScanStatus.Ok, game.Status);
 
         var desktop = new GameScanner(env.Catalog, env.Paths.GamesDir, env.Paths.PlaylistsDir) { Os = Os.Windows }.Scan();
-        Assert.Equal(ScanStatus.Unknown, Assert.Single(desktop).Status);
+        Assert.Equal("PSP", Assert.Single(desktop).Platform);
 
         var psp = env.Catalog.Get("PSP")!;
         Assert.True(psp.AvailableOn(Os.Android));
-        Assert.False(psp.AvailableOn(Os.Windows));
+        Assert.True(psp.AvailableOn(Os.Windows));
+        Assert.Equal("ppsspp_libretro.dll", OsPlatform.CoreFileName(psp.CoreFor(Os.Windows), Os.Windows));
         Assert.True(psp.Analog);
         Assert.Equal("libppsspp_libretro_android.so", OsPlatform.CoreFileName(psp.CoreFor(Os.Android), Os.Android));
     }
@@ -158,5 +159,30 @@ public class AndroidTests
         using (var archive = System.IO.Compression.ZipFile.Open(zip, System.IO.Compression.ZipArchiveMode.Create))
         using (var s = archive.CreateEntry("game.gba").Open()) s.Write(new byte[64]);
         Assert.False(GameCenter.Core.Scanning.DiscArchive.IsDiscZip(zip));
+    }
+
+    [Fact]
+    public void SystemAssets_CopiedToBiosOnce_AndRefreshedWhenInstallerShipsNewer()
+    {
+        using var env = new TestEnv();
+        // Thư mục cài giả nằm trong thư mục tạm của bài kiểm thử: env.Paths.AppDir là thư mục dự án thật, không ghi vào đó
+        var paths = new AppPaths(Path.Combine(env.Root, "app"), env.Paths.DataDir, Os.Windows);
+        var source = Path.Combine(GameCenter.Core.Emulation.SystemAssets.SourceDir(paths), "PPSSPP");
+        Directory.CreateDirectory(Path.Combine(source, "flash0", "font"));
+        File.WriteAllText(Path.Combine(source, "ppge_atlas.zim"), "v1");
+        File.WriteAllText(Path.Combine(source, "flash0", "font", "jpn0.pgf"), "font");
+        var mine = Path.Combine(paths.BiosDir, "scph1001.bin");
+        Directory.CreateDirectory(paths.BiosDir);
+        File.WriteAllText(mine, "bios cua nguoi dung");
+
+        Assert.Equal(1, GameCenter.Core.Emulation.SystemAssets.Install(paths));
+        Assert.Equal("v1", File.ReadAllText(Path.Combine(paths.BiosDir, "PPSSPP", "ppge_atlas.zim")));
+        Assert.True(File.Exists(Path.Combine(paths.BiosDir, "PPSSPP", "flash0", "font", "jpn0.pgf")));
+        Assert.Equal(0, GameCenter.Core.Emulation.SystemAssets.Install(paths));   // đã có, không chép lại
+
+        File.WriteAllText(Path.Combine(source, "ppge_atlas.zim"), "ban moi hon");
+        Assert.Equal(1, GameCenter.Core.Emulation.SystemAssets.Install(paths));
+        Assert.Equal("ban moi hon", File.ReadAllText(Path.Combine(paths.BiosDir, "PPSSPP", "ppge_atlas.zim")));
+        Assert.Equal("bios cua nguoi dung", File.ReadAllText(mine));
     }
 }
