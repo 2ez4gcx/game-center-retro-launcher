@@ -247,7 +247,7 @@ This branch adds an experimental Android version that has **not been released**.
 | PS2 | Play! (emulates the BIOS itself, no BIOS file needed) | Shows a picture and runs on a real device; speed and per-game compatibility not evaluated. No "save my place", only in-game memory card saves |
 | PSP | PPSSPP | Packaged, only disc detection is tested; not yet run with a real game. Android only |
 
-Done: automatic game detection, accent-insensitive search, favorites, recently played, rename, choose console, manual disc merging, restoring older saves, save backup, Vietnamese / English, touch buttons (portrait and landscape) with a virtual analog stick for PS2 / PSP, controller support on the main screen too, press-twice-to-quit, "save my place" on exit, in-game menu (change disc, quit).
+Done: automatic game detection, accent-insensitive search, favorites, recently played, rename, choose console, manual disc merging, restoring older saves, save backup, Vietnamese / English, touch buttons (portrait and landscape) with a virtual analog stick for PS2 / PSP, a hide-buttons toggle and ×2 fast-forward, controller support on the main screen too, press-twice-to-quit, "save my place" on exit, in-game menu (change disc, quit).
 
 By default the games folder lives in `Android/data/com.khuongdoan.gamecenter/files/Games`. **Settings** has a button to switch to a `GameCenter` folder right in internal storage (easier to copy games into; requires turning on file access when Android asks); existing games and saves are moved along.
 

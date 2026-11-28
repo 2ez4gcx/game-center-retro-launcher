@@ -80,16 +80,33 @@ public sealed class MainView : UserControl
         _search.VerticalAlignment = VerticalAlignment.Center;
         _search.TextChanged += (_, _) => ShowGames();
 
-        // Ba hàng: tên app, ba nút chia đều chiều ngang, ô tìm kiếm. Xếp chung một hàng thì màn hình điện thoại
-        // (rộng khoảng 360 dp) không đủ chỗ: ô tìm kiếm bị ép sát và các nút chồng lên nhau, không bấm được.
-        var header = new StackPanel { Margin = new Thickness(16, 12, 16, 4), Spacing = 10 };
-        header.Children.Add(new TextBlock { Text = "Game Center", FontSize = 28, FontWeight = FontWeight.Bold });
-        var actions = new UniformGrid { Columns = 3, Margin = new Thickness(-4, 0) };
+        // Màn hình hẹp (điện thoại cầm dọc, rộng khoảng 360 dp): ba hàng (tên app, ba nút chia đều chiều ngang, ô tìm
+        // kiếm); xếp chung một hàng thì ô tìm kiếm bị ép sát và các nút chồng lên nhau, không bấm được.
+        // Màn hình rộng (điện thoại xoay ngang, máy tính bảng, TV): một hàng, để dành chiều cao cho danh sách game
+        // (điện thoại xoay ngang mà giữ ba hàng thì chỉ còn thấy một game).
+        var header = new Grid { Margin = new Thickness(16, 12, 16, 4) };
+        var title = new TextBlock { Text = "Game Center", FontSize = 28, FontWeight = FontWeight.Bold, VerticalAlignment = VerticalAlignment.Center };
+        var actions = new UniformGrid { Columns = 3 };
         actions.Children.Add(scan);
         actions.Children.Add(settings);
         actions.Children.Add(help);
+        header.Children.Add(title);
         header.Children.Add(actions);
         header.Children.Add(_search);
+        bool? wideHeader = null;
+        void LayoutHeader(double width)
+        {
+            bool wide = width >= 700;
+            if (wide == wideHeader) return;
+            wideHeader = wide;
+            header.RowDefinitions = new RowDefinitions(wide ? "Auto" : "Auto,Auto,Auto");
+            header.ColumnDefinitions = new ColumnDefinitions(wide ? "Auto,Auto,*" : "*");
+            Grid.SetRow(actions, wide ? 0 : 1); Grid.SetColumn(actions, wide ? 1 : 0);
+            Grid.SetRow(_search, wide ? 0 : 2); Grid.SetColumn(_search, wide ? 2 : 0);
+            actions.Margin = wide ? new Thickness(12, 0, 8, 0) : new Thickness(-4, 10, -4, 10);
+        }
+        LayoutHeader(0);
+        SizeChanged += (_, e) => LayoutHeader(e.NewSize.Width);
 
         _tabs.Background = Brushes.Transparent;
         _tabs.Margin = new Thickness(8, 0);
@@ -176,7 +193,7 @@ public sealed class MainView : UserControl
     private static Button HeaderButton(string text) => new()
     {
         Content = new TextBlock { Text = text, FontSize = 20, TextTrimming = TextTrimming.CharacterEllipsis },
-        Padding = new Thickness(8, 14), Margin = new Thickness(4, 0),
+        Padding = new Thickness(8, 14), Margin = new Thickness(4, 0), MinWidth = 100,
         HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center,
     };
 
