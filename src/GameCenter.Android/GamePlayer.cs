@@ -69,7 +69,9 @@ public sealed class GamePlayer
         // Game nhiều đĩa: nhớ đĩa đang dùng, cạnh thẻ nhớ (bản máy tính: RetroArch tự ghi file .ldci cùng chỗ)
         if (game.DiscCount > 1) intent.PutExtra("discFile", Path.Combine(saves.SavesDir, saves.ContentName + ".disc"));
         intent.PutExtra("saveStateOnExit", useStates);
-        intent.PutExtra("variables", CoreVariables());
+        var options = CoreOptions(plan.CorePath!, paths);
+        intent.PutExtra("variables", options.Where(o => !o.StartsWith("shader=", StringComparison.Ordinal)).ToArray());
+        intent.PutExtra("shader", options.LastOrDefault(o => o.StartsWith("shader=", StringComparison.Ordinal))?["shader=".Length..] ?? "");
         intent.PutExtra("env", CoreEnvironment(plan.CorePath!, paths.SavesDir));
         intent.PutExtra("analog", App.Catalog.Get(game.Platform)?.Analog == true);
         intent.PutExtra("psSymbols", game.Platform is "PS1" or "PS2" or "PSP");
@@ -140,12 +142,58 @@ public sealed class GamePlayer
     private static bool IsPlay(string corePath) =>
         Path.GetFileName(corePath).Contains("play_libretro", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>Tùy chọn core do Game Center quản lý (phần áp dụng được trên Android).</summary>
-    private static string[] CoreVariables() => new[]
+    /// <summary>
+    /// Tùy chọn core do Game Center đặt sẵn cho từng hệ máy (tốc độ, hình ảnh), dạng "khóa=giá trị"; riêng "shader=..."
+    /// là cách phóng hình lên màn hình (sharp / lcd / crt / default). Người rành máy có thể ghi đè bằng file
+    /// Config/core-options.txt trong thư mục dữ liệu, mỗi dòng một "khóa=giá trị" (dòng bắt đầu bằng # là ghi chú).
+    /// </summary>
+    internal static List<string> CoreOptions(string corePath, GameCenter.Core.Config.AppPaths paths)
     {
+        var options = new List<string>(DefaultCoreOptions(Path.GetFileName(corePath)));
+        try
+        {
+            var file = Path.Combine(paths.ConfigDir, "core-options.txt");
+            if (File.Exists(file))
+                options.AddRange(File.ReadAllLines(file).Select(l => l.Trim()).Where(l => l.Length > 0 && l[0] != '#' && l.Contains('=')));
+        }
+        catch (Exception ex) { Log.Error("Không đọc được core-options.txt", ex); }
+        // Dòng sau ghi đè dòng trước cùng khóa
+        return options.GroupBy(o => o[..o.IndexOf('=')]).Select(g => g.Last()).ToList();
+    }
+
+    /// <summary>
+    /// Thiết lập tốc độ / hình ảnh cho từng core, đã đo trên máy thật (Galaxy Note 9, 60 khung hình/giây):
+    /// - Máy băng và máy thùng (hình điểm ảnh): phóng hình kiểu "sharp" cho nét, không nhòe như làm mịn mặc định.
+    /// - PS1: dựng hình 3D ở độ phân giải gấp đôi. PSP: độ phân giải gấp đôi (960x544). Hai mục này chỉ bật trên máy đủ
+    ///   mạnh (<see cref="IsStrongDevice"/>); máy yếu giữ độ phân giải gốc để không tụt tốc độ.
+    /// - PS2 (Play!): không có tùy chọn nào giúp nhanh hơn; để nguyên độ phân giải gốc.
+    /// </summary>
+    private static string[] DefaultCoreOptions(string core)
+    {
+        bool Is(string name) => core.Contains(name, StringComparison.OrdinalIgnoreCase);
         // Game thùng: không để giữ START lâu là vào menu kỹ thuật của máy thùng
-        "fbneo-diagnostic-input=None",
-    };
+        if (Is("fbneo")) return new[] { "fbneo-diagnostic-input=None", "shader=sharp" };
+        if (Is("fceumm") || Is("snes9x") || Is("gambatte") || Is("mgba") || Is("genesis_plus_gx")) return new[] { "shader=sharp" };
+        if (Is("pcsx_rearmed") && IsStrongDevice)
+            return new[] { "pcsx_rearmed_neon_enhancement_enable=enabled", "pcsx_rearmed_neon_enhancement_no_main=enabled" };
+        if (Is("ppsspp") && IsStrongDevice) return new[] { "ppsspp_internal_resolution=960x544" };
+        return Array.Empty<string>();
+    }
+
+    /// <summary>Máy đủ mạnh để tăng độ phân giải: từ 8 nhân xử lý và 4 GB RAM trở lên (ngưỡng ước lượng, chưa đo trên máy yếu).</summary>
+    private static bool IsStrongDevice
+    {
+        get
+        {
+            try
+            {
+                var info = new ActivityManager.MemoryInfo();
+                (Application.Context.GetSystemService(Context.ActivityService) as ActivityManager)?.GetMemoryInfo(info);
+                return Environment.ProcessorCount >= 8 && info.TotalMem >= 3_500_000_000L;
+            }
+            catch (Exception) { return false; }
+        }
+    }
 
     /// <summary>
     /// File core mở được. RetroArch tự đọc game băng trong zip ("a.zip" có một ROM, hoặc "a.zip#rom.nes"), ở đây phải

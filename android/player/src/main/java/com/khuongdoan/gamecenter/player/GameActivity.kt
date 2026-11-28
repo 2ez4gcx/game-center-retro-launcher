@@ -29,6 +29,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
+import com.swordfish.libretrodroid.ShaderConfig
 import com.swordfish.libretrodroid.Variable
 import kotlinx.coroutines.launch
 import java.io.File
@@ -57,6 +58,7 @@ class GameActivity : ComponentActivity() {
         const val EXTRA_VARIABLES = "variables"       // tùy chọn core, mỗi phần tử "khóa=giá trị"
         const val EXTRA_ENV = "env"                   // biến môi trường cho core, mỗi phần tử "TÊN=giá trị"
         const val EXTRA_ANALOG = "analog"             // true: hiện cần analog ảo (PS2, PSP)
+        const val EXTRA_SHADER = "shader"             // cách phóng hình lên màn hình: sharp, lcd, crt (mặc định: làm mịn)
         const val EXTRA_PAD_LAYOUT = "padLayout"      // bộ nút cảm ứng theo hệ máy: two, sms, snes, gba, md, psp, arcade
         const val EXTRA_PS_SYMBOLS = "psSymbols"      // true: 4 nút bấm vẽ tam giác, vuông, tròn, chéo (PS1, PS2, PSP)
         const val EXTRA_TEXT_EXIT_AGAIN = "textExitAgain"
@@ -74,6 +76,7 @@ class GameActivity : ComponentActivity() {
         private const val SRAM_INTERVAL_MS = 10_000L
         private const val EXIT_CONFIRM_MS = 3_000L
         private const val MAX_SPEED = 3
+        private const val FPS_LOG_MS = 5_000L
     }
 
     private lateinit var retroView: GLRetroView
@@ -86,6 +89,8 @@ class GameActivity : ComponentActivity() {
     private var discFile: File? = null
     private var lastSram: ByteArray? = null
     private var gameStarted = false
+    private var frames = 0
+    private var framesSince = 0L
     private var pendingLoadState = false
     private var exiting = false
     private var lastExitPress = 0L
@@ -142,6 +147,12 @@ class GameActivity : ComponentActivity() {
                 .toTypedArray()
             saveRAMState = sramFile?.takeIf { it.isFile }?.readBytes()
             rumbleEventsEnabled = false
+            shader = when (intent.getStringExtra(EXTRA_SHADER)) {
+                "sharp" -> ShaderConfig.Sharp
+                "lcd" -> ShaderConfig.LCD
+                "crt" -> ShaderConfig.CRT
+                else -> ShaderConfig.Default
+            }
         }
         lastSram = data.saveRAMState
 
@@ -186,7 +197,10 @@ class GameActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             retroView.getGLRetroEvents().collect { event ->
-                if (event is GLRetroView.GLRetroEvents.FrameRendered && !gameStarted) onGameStarted()
+                if (event is GLRetroView.GLRetroEvents.FrameRendered) {
+                    if (!gameStarted) onGameStarted()
+                    countFrame()
+                }
             }
         }
         lifecycleScope.launch {
@@ -225,6 +239,22 @@ class GameActivity : ComponentActivity() {
         speed = if (speed >= MAX_SPEED) 1 else speed + 1
         retroView.frameSpeed = speed
         touchPad.speed = speed
+    }
+
+    /**
+     * Ghi số khung hình mỗi giây vào log (5 giây một lần) để đo tốc độ giả lập khi chỉnh tùy chọn core:
+     * LibretroDroid chạy core một lần cho mỗi khung hình vẽ ra, nên máy không kéo nổi thì con số này tụt dưới 60.
+     */
+    private fun countFrame() {
+        val now = SystemClock.elapsedRealtime()
+        if (framesSince == 0L) { framesSince = now; frames = 0; return }
+        frames++
+        val elapsed = now - framesSince
+        if (elapsed >= FPS_LOG_MS) {
+            if (pauseDepth == 0) Log.i(TAG, "FPS %.1f (tốc độ ×%d)".format(frames * 1000.0 / elapsed, speed))
+            framesSince = now
+            frames = 0
+        }
     }
 
     // ---------------------------------------------------------------- Save
