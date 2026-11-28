@@ -247,9 +247,9 @@ Nhánh này có thêm bản Android đang thử nghiệm, **chưa phát hành**.
 | PS1 | PCSX ReARMed (thay Beetle PSX HW, vì app chỉ có OpenGL ES) | Đã chạy trên máy thật, không cần BIOS |
 | Máy thùng | FinalBurn Neo | Đã chạy trên máy thật |
 | PS2 | Play! (tự giả lập BIOS, không cần file BIOS) | Lên hình và chạy trên máy thật; tốc độ và độ tương thích từng game chưa đánh giá. Không có "lưu chỗ đang chơi", chỉ có save thẻ nhớ trong game |
-| PSP | PPSSPP | Đã đóng gói, mới kiểm thử phần nhận diện đĩa; chưa chạy thử với game thật. Chỉ có trên Android |
+| PSP | PPSSPP | Đã chạy trên máy thật (một game), kể cả lưu và chơi tiếp chỗ đang chơi; tốc độ và độ tương thích từng game chưa đánh giá. Chỉ có trên Android |
 
-Đã có: tự nhận game, tìm kiếm không dấu, yêu thích, chơi gần đây, đổi tên, chọn hệ máy, ghép đĩa bằng tay, khôi phục save cũ, sao lưu save, tiếng Việt / tiếng Anh, nút cảm ứng (dọc và ngang) kèm cần analog ảo cho PS2 / PSP, nút ẩn nút cảm ứng và chạy nhanh ×2, điều khiển bằng tay cầm cả ở màn hình chính, thoát game bấm 2 lần, hỏi lưu chỗ đang chơi, menu trong game (đổi đĩa, thoát).
+Đã có: tự nhận game, tìm kiếm không dấu, yêu thích, chơi gần đây, đổi tên, chọn hệ máy, ghép đĩa bằng tay, khôi phục save cũ, sao lưu save, tiếng Việt / tiếng Anh, nút cảm ứng (dọc và ngang) kèm cần analog ảo cho PS2 / PSP, nút ẩn nút cảm ứng và tốc độ game ×1 / ×2 / ×3, điều khiển bằng tay cầm cả ở màn hình chính, thoát game bấm 2 lần, hỏi lưu chỗ đang chơi, menu trong game (đổi đĩa, thoát).
 
 Thư mục game mặc định nằm trong `Android/data/com.khuongdoan.gamecenter/files/Games`. Trong **Cài đặt** có nút chuyển sang thư mục `GameCenter` ngay ở bộ nhớ trong (dễ chép game hơn; cần bật quyền truy cập file khi Android hỏi), game và save đang có được chuyển theo.
 

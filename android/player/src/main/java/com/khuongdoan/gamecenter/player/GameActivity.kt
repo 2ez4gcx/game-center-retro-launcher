@@ -70,6 +70,7 @@ class GameActivity : ComponentActivity() {
 
         private const val SRAM_INTERVAL_MS = 10_000L
         private const val EXIT_CONFIRM_MS = 3_000L
+        private const val MAX_SPEED = 3
     }
 
     private lateinit var retroView: GLRetroView
@@ -150,7 +151,7 @@ class GameActivity : ComponentActivity() {
             onKey = { keyCode, down ->
                 when (keyCode) {
                     KeyEvent.KEYCODE_MENU -> if (down) showMenu()
-                    KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> if (down) toggleFastForward()
+                    KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> if (down) nextSpeed()
                     else -> retroView.sendKeyEvent(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, keyCode)
                 }
             },
@@ -209,12 +210,12 @@ class GameActivity : ComponentActivity() {
         handler.postDelayed(sramTick, SRAM_INTERVAL_MS)
     }
 
-    /** Nút ×2 trên màn hình: bật / tắt chạy nhanh gấp đôi (qua đoạn hội thoại, đoạn đi bộ dài). */
-    private fun toggleFastForward() {
+    /** Nút tốc độ trên màn hình: mỗi lần chạm tăng một bậc ×1, ×2, ×3 rồi quay lại ×1. */
+    private fun nextSpeed() {
         if (!gameStarted) return
-        val fast = retroView.frameSpeed <= 1
-        retroView.frameSpeed = if (fast) 2 else 1
-        touchPad.fastForward = fast
+        val next = if (retroView.frameSpeed >= MAX_SPEED) 1 else retroView.frameSpeed + 1
+        retroView.frameSpeed = next
+        touchPad.speed = next
     }
 
     // ---------------------------------------------------------------- Save

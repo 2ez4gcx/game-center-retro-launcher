@@ -18,7 +18,7 @@ import kotlin.math.hypot
  *
  * Bố cục: L2 / L1 / SELECT xếp dọc ở mép trái, R2 / R1 / START xếp dọc ở mép phải (nút chữ nhật bo góc);
  * phím hướng ở góc dưới trái, 4 nút bấm ở góc dưới phải; ba nút nhỏ ở giữa cạnh trên: menu (đổi đĩa, thoát),
- * ẩn / hiện nút cảm ứng, chạy nhanh ×2. Hệ PlayStation ([psSymbols]) vẽ 4 nút bằng tam giác, vuông, tròn, chéo;
+ * ẩn / hiện nút cảm ứng, tốc độ game (×1, ×2, ×3). Hệ PlayStation ([psSymbols]) vẽ 4 nút bằng tam giác, vuông, tròn, chéo;
  * hệ khác vẽ chữ A, B, X, Y. Hệ máy có cần analog (PSP, PS2) thì thêm một cần analog ảo.
  *
  * Mỗi lần nút đổi trạng thái gọi [onKey] với mã phím Android (KEYCODE_BUTTON_*, KEYCODE_DPAD_*; nút menu là
@@ -88,21 +88,21 @@ class TouchPadView(
     /** Đang ẩn nút cảm ứng (chỉ còn ba nút nhỏ ở cạnh trên). */
     private var hidden = false
 
-    /** Đang chạy nhanh: nút ×2 sáng lên. GameActivity đặt lại sau khi đổi tốc độ. */
-    var fastForward = false
+    /** Tốc độ game hiện tại (1, 2 hoặc 3): nút tốc độ ghi "×N" và sáng lên khi lớn hơn 1. GameActivity đặt sau khi đổi. */
+    var speed = 1
         set(value) { field = value; invalidate() }
 
-    // Nền nút tối trong mờ, viền mảnh, chữ trắng: thấy rõ trên cả cảnh game sáng lẫn tối mà không che hình.
-    // Nút đang bấm tô màu nhấn của app.
-    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x8C101418.toInt() }
-    private val fillDown = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xD92E8BFF.toInt() }
-    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x80FFFFFF.toInt(); style = Paint.Style.STROKE }
-    private val shape = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xE6FFFFFF.toInt(); style = Paint.Style.FILL }
+    // Nút mờ khoảng 30% để không che hình game: nền tối và viền trắng đều 30%; chữ và ký hiệu đậm hơn một chút
+    // (55%) để còn đọc được trên cảnh sáng. Nút đang bấm tô màu nhấn của app.
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x4D101418 }
+    private val fillDown = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x992E8BFF.toInt() }
+    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x4DFFFFFF; style = Paint.Style.STROKE }
+    private val shape = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x8CFFFFFF.toInt(); style = Paint.Style.FILL }
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xE6FFFFFF.toInt(); style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
+        color = 0x8CFFFFFF.toInt(); style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
     }
-    private val knob = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xB3FFFFFF.toInt() }
-    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xE6FFFFFF.toInt(); textAlign = Paint.Align.CENTER; isFakeBoldText = true }
+    private val knob = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x66FFFFFF }
+    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x8CFFFFFF.toInt(); textAlign = Paint.Align.CENTER; isFakeBoldText = true }
     private val path = Path()
     private val rect = RectF()
 
@@ -168,7 +168,7 @@ class TouchPadView(
         }
         for (b in buttons) {
             if (hidden && !b.top) continue
-            val lit = b.keyCode in pressed || b.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD && fastForward
+            val lit = b.keyCode in pressed || b.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD && speed > 1
             val paint = if (lit) fillDown else fill
             if (b.round) {
                 canvas.drawCircle(b.x, b.y, b.hw, paint)
@@ -223,13 +223,13 @@ class TouchPadView(
         }
     }
 
-    /** Hai tam giác chỉ sang phải và chữ "×2". */
+    /** Hai tam giác chỉ sang phải và tốc độ hiện tại "×N". */
     private fun drawFastForwardIcon(canvas: Canvas, b: Button) {
         val a = b.hh * 0.36f
         drawTriangle(canvas, b.x - b.hw * 0.52f, b.y, 1f, 0f, a)
         drawTriangle(canvas, b.x - b.hw * 0.52f + a * 1.7f, b.y, 1f, 0f, a)
         text.textSize = b.hh * 0.95f
-        canvas.drawText("×2", b.x + b.hw * 0.45f, b.y - (text.ascent() + text.descent()) / 2, text)
+        canvas.drawText("×$speed", b.x + b.hw * 0.45f, b.y - (text.ascent() + text.descent()) / 2, text)
     }
 
     /** Ký hiệu nút PlayStation theo vị trí: X (trên) tam giác, Y (trái) vuông, A (phải) tròn, B (dưới) chéo. */
