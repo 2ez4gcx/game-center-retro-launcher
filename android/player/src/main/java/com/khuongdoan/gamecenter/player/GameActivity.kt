@@ -57,6 +57,7 @@ class GameActivity : ComponentActivity() {
         const val EXTRA_VARIABLES = "variables"       // tùy chọn core, mỗi phần tử "khóa=giá trị"
         const val EXTRA_ENV = "env"                   // biến môi trường cho core, mỗi phần tử "TÊN=giá trị"
         const val EXTRA_ANALOG = "analog"             // true: hiện cần analog ảo (PS2, PSP)
+        const val EXTRA_PAD_LAYOUT = "padLayout"      // bộ nút cảm ứng theo hệ máy: two, sms, snes, gba, md, psp, arcade
         const val EXTRA_PS_SYMBOLS = "psSymbols"      // true: 4 nút bấm vẽ tam giác, vuông, tròn, chéo (PS1, PS2, PSP)
         const val EXTRA_TEXT_EXIT_AGAIN = "textExitAgain"
         const val EXTRA_TEXT_LOADING = "textLoading"
@@ -154,6 +155,7 @@ class GameActivity : ComponentActivity() {
             this,
             analog = intent.getBooleanExtra(EXTRA_ANALOG, false),
             psSymbols = intent.getBooleanExtra(EXTRA_PS_SYMBOLS, false),
+            layout = intent.getStringExtra(EXTRA_PAD_LAYOUT) ?: "",
             onKey = { keyCode, down ->
                 when (keyCode) {
                     KeyEvent.KEYCODE_MENU -> if (down) showMenu()

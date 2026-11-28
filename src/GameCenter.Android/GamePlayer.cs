@@ -73,6 +73,7 @@ public sealed class GamePlayer
         intent.PutExtra("env", CoreEnvironment(plan.CorePath!, paths.SavesDir));
         intent.PutExtra("analog", App.Catalog.Get(game.Platform)?.Analog == true);
         intent.PutExtra("psSymbols", game.Platform is "PS1" or "PS2" or "PSP");
+        intent.PutExtra("padLayout", PadLayout(game.Platform));
         intent.PutExtra("textExitAgain", Loc.T("android.exit_again"));
         intent.PutExtra("textLoading", Loc.T("android.loading"));
         intent.PutExtra("title", game.Name);
@@ -122,6 +123,19 @@ public sealed class GamePlayer
     /// </summary>
     private static string[] CoreEnvironment(string corePath, string savesDir) =>
         IsPlay(corePath) ? new[] { "EXTERNAL_STORAGE=" + savesDir } : Array.Empty<string>();
+
+    /// <summary>Bộ nút cảm ứng theo hệ máy (TouchPadView): chỉ hiện những nút máy đó có, đúng tên nút của máy.</summary>
+    private static string PadLayout(string? platform) => platform switch
+    {
+        "NES" or "GB" or "GBC" => "two",
+        "MasterSystem" or "GameGear" => "sms",
+        "SNES" => "snes",
+        "GBA" => "gba",
+        "MegaDrive" => "md",
+        "PSP" => "psp",
+        ArcadeDatabase.Platform => "arcade",
+        _ => "",
+    };
 
     private static bool IsPlay(string corePath) =>
         Path.GetFileName(corePath).Contains("play_libretro", StringComparison.OrdinalIgnoreCase);

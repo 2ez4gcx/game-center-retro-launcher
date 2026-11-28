@@ -32,6 +32,7 @@ class TouchPadView(
     context: Context,
     private val analog: Boolean,
     private val psSymbols: Boolean,
+    private val layout: String,
     private val onKey: (keyCode: Int, down: Boolean) -> Unit,
     private val onAnalog: (x: Float, y: Float) -> Unit,
 ) : View(context) {
@@ -39,9 +40,10 @@ class TouchPadView(
     /** Nút tròn khi [round], còn lại là chữ nhật bo góc nửa rộng [hw], nửa cao [hh]. */
     private class Button(
         val keyCode: Int,
-        val label: String,
-        val round: Boolean,
+        var label: String,
+        var round: Boolean,
         val top: Boolean = false,
+        var visible: Boolean = true,
         var x: Float = 0f,
         var y: Float = 0f,
         var hw: Float = 0f,
@@ -152,9 +154,82 @@ class TouchPadView(
         place(KEY_HIDE, w / 2f, topY, thw, thh)
         place(KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, w / 2f + gap, topY, thw, thh)
 
+        applyLayout(u, fx, clusterY, d, fr)
+        // Hệ máy ít nút: dồn các nút chữ nhật còn lại lên trên, không để hở chỗ của nút đã ẩn
+        for (side in listOf(
+            listOf(KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_SELECT),
+            listOf(KeyEvent.KEYCODE_BUTTON_R2, KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_BUTTON_START),
+        )) {
+            val shown = side.map { k -> buttons.first { it.keyCode == k } }.filter { it.visible && !it.round }
+            // Dọc: dồn xuống sát phím hướng; ngang: dồn lên sát cạnh trên
+            val start = if (portrait) first + step * (3 - shown.size) else first
+            shown.forEachIndexed { i, b -> b.y = start + step * i }
+        }
+
         // Cần analog: ngang thì nằm cạnh phím hướng, dọc thì nằm giữa hai cột nút chữ nhật
         stickR = u * 1.05f
         if (portrait) { stickX = w / 2f; stickY = first + step } else { stickX = u * 5.6f; stickY = h - u * 1.6f }
+    }
+
+    /**
+     * Bộ nút theo hệ máy: chỉ hiện những nút máy đó có, ghi tên nút như trên tay cầm thật.
+     * - "two": NES, Game Boy (A, B, SELECT, START)          - "sms": Master System, Game Gear (1, 2, START)
+     * - "snes": thêm X, Y, L, R                              - "gba": A, B, L, R
+     * - "md": Mega Drive (A, B, C và X, Y, Z, START)         - "psp": như PlayStation nhưng chỉ có L, R
+     * - "arcade": 6 nút, SELECT ghi là COIN (bỏ xu)          - còn lại: đủ bộ PlayStation
+     */
+    private fun applyLayout(u: Float, fx: Float, clusterY: Float, d: Float, fr: Float) {
+        fun b(key: Int) = buttons.first { it.keyCode == key }
+        fun hide(vararg keys: Int) = keys.forEach { b(it).visible = false }
+        fun twoButtons(left: String, right: String) {
+            // Hai nút to xếp chéo như tay cầm NES / Game Boy: nút trái thấp hơn, nút phải cao hơn
+            hide(KeyEvent.KEYCODE_BUTTON_X, KeyEvent.KEYCODE_BUTTON_Y)
+            b(KeyEvent.KEYCODE_BUTTON_B).apply { label = left; x = fx - d * 0.55f; y = clusterY + d * 0.45f; hw = fr * 1.2f; hh = hw }
+            b(KeyEvent.KEYCODE_BUTTON_A).apply { label = right; x = fx + d * 0.85f; y = clusterY - d * 0.35f; hw = fr * 1.2f; hh = hw }
+        }
+        when (layout) {
+            "two" -> {
+                hide(KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_BUTTON_R2)
+                twoButtons("B", "A")
+            }
+            "sms" -> {
+                hide(KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_BUTTON_R2,
+                    KeyEvent.KEYCODE_BUTTON_SELECT)
+                twoButtons("1", "2")
+            }
+            "gba" -> {
+                hide(KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.KEYCODE_BUTTON_R2)
+                b(KeyEvent.KEYCODE_BUTTON_L1).label = "L"; b(KeyEvent.KEYCODE_BUTTON_R1).label = "R"
+                twoButtons("B", "A")
+            }
+            "snes", "psp" -> {
+                hide(KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.KEYCODE_BUTTON_R2)
+                b(KeyEvent.KEYCODE_BUTTON_L1).label = "L"; b(KeyEvent.KEYCODE_BUTTON_R1).label = "R"
+            }
+            "arcade" -> {
+                hide(KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.KEYCODE_BUTTON_R2)
+                b(KeyEvent.KEYCODE_BUTTON_SELECT).label = "COIN"
+            }
+            "md" -> {
+                // Genesis Plus GX: Y, B, A của libretro là A, B, C của Mega Drive; L, X, R là X, Y, Z (tay cầm 6 nút)
+                hide(KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.KEYCODE_BUTTON_R2, KeyEvent.KEYCODE_BUTTON_SELECT)
+                val big = fr * 0.95f
+                val small = fr * 0.72f
+                val gap = d * 1.2f
+                val names = listOf(
+                    Triple(KeyEvent.KEYCODE_BUTTON_Y, "A", KeyEvent.KEYCODE_BUTTON_L1 to "X"),
+                    Triple(KeyEvent.KEYCODE_BUTTON_B, "B", KeyEvent.KEYCODE_BUTTON_X to "Y"),
+                    Triple(KeyEvent.KEYCODE_BUTTON_A, "C", KeyEvent.KEYCODE_BUTTON_R1 to "Z"),
+                )
+                names.forEachIndexed { i, (main, mainLabel, upper) ->
+                    // Ba nút xếp hàng hơi chếch lên về bên phải, hàng X Y Z nhỏ hơn nằm phía trên
+                    val x = fx + (i - 1) * gap - d * 0.1f
+                    val y = clusterY + d * 0.75f - i * d * 0.3f
+                    b(main).apply { label = mainLabel; this.x = x; this.y = y; hw = big; hh = big }
+                    b(upper.first).apply { label = upper.second; round = true; this.x = x + d * 0.15f; this.y = y - d * 1.35f; hw = small; hh = small }
+                }
+            }
+        }
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -167,7 +242,7 @@ class TouchPadView(
             }
         }
         for (b in buttons) {
-            if (hidden && !b.top) continue
+            if (!b.visible || hidden && !b.top) continue
             val lit = b.keyCode in pressed || b.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD && speed > 1
             val paint = if (lit) fillDown else fill
             if (b.round) {
@@ -330,7 +405,7 @@ class TouchPadView(
             return
         }
         for (b in buttons) {
-            if (hidden && !b.top) continue
+            if (!b.visible || hidden && !b.top) continue
             // Vùng bấm rộng hơn hình vẽ: nút tròn thêm 15%, nút chữ nhật thêm một chút mỗi phía
             val mx = if (b.round) b.hw * 1.15f else b.hw + b.hh * 0.25f
             val my = if (b.round) b.hh * 1.15f else b.hh * 1.25f

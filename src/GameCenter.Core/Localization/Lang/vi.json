@@ -267,7 +267,7 @@
 
   "android.exit_again": "Nhấn lại để thoát...",
   "android.empty_text": "Chép game vào thư mục này (cắm máy vào máy tính bằng cáp USB), rồi bấm \"Quét\":\n\n{0}",
-  "android.arcade_coin": "Máy thùng phải bỏ xu rồi mới chơi được:\n• Bỏ xu: bấm SELECT\n• Bắt đầu: bấm START\nHết lượt chơi thì bỏ xu rồi bấm START để chơi tiếp.",
+  "android.arcade_coin": "Máy thùng phải bỏ xu rồi mới chơi được:\n• Bỏ xu: bấm nút COIN trên màn hình (tay cầm: SELECT)\n• Bắt đầu: bấm START\nHết lượt chơi thì bỏ xu rồi bấm START để chơi tiếp.",
   "android.menu_continue": "Chơi tiếp",
   "android.menu_disc": "Đổi đĩa",
   "android.menu_exit": "Thoát game",

@@ -269,7 +269,7 @@
 
   "android.exit_again": "Press again to quit...",
   "android.empty_text": "Copy your games into this folder (connect the device to a computer with a USB cable), then tap \"Scan\":\n\n{0}",
-  "android.arcade_coin": "Arcade machines need a coin before you can play:\n• Insert coin: press SELECT\n• Start: press START\nWhen you run out of credits, insert a coin and press START to continue.",
+  "android.arcade_coin": "Arcade machines need a coin before you can play:\n• Insert coin: tap the COIN button on screen (controller: SELECT)\n• Start: press START\nWhen you run out of credits, insert a coin and press START to continue.",
   "android.menu_continue": "Keep playing",
   "android.menu_disc": "Change disc",
   "android.menu_exit": "Quit game",
