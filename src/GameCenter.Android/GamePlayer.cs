@@ -73,9 +73,11 @@ public sealed class GamePlayer
         if (game.DiscCount > 1) intent.PutExtra("discFile", Path.Combine(saves.SavesDir, saves.ContentName + ".disc"));
         intent.PutExtra("saveStateOnExit", useStates);
         var options = CoreOptions(plan.CorePath!, paths);
-        intent.PutExtra("variables", options.Where(o => !o.StartsWith("shader=", StringComparison.Ordinal)).ToArray());
+        intent.PutExtra("variables", options.Where(o => !o.StartsWith("shader=", StringComparison.Ordinal) && !o.StartsWith("env.", StringComparison.Ordinal)).ToArray());
         intent.PutExtra("shader", options.LastOrDefault(o => o.StartsWith("shader=", StringComparison.Ordinal))?["shader=".Length..] ?? "");
-        intent.PutExtra("env", CoreEnvironment(plan.CorePath!, paths.SavesDir));
+        // Dòng "env.TÊN=giá trị" trong core-options.txt: biến môi trường cho core (dùng khi thử nghiệm)
+        intent.PutExtra("env", CoreEnvironment(plan.CorePath!, paths.SavesDir)
+            .Concat(options.Where(o => o.StartsWith("env.", StringComparison.Ordinal)).Select(o => o[4..])).ToArray());
         intent.PutExtra("analog", App.Catalog.Get(game.Platform)?.Analog == true);
         intent.PutExtra("psSymbols", game.Platform is "PS1" or "PS2" or "PSP");
         intent.PutExtra("padLayout", PadLayout(game.Platform));
